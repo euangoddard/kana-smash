@@ -33,6 +33,8 @@ import {
   type Question,
 } from "~/lib/quiz";
 import { kanaSoundAvailable, playKanaSound } from "~/lib/audio";
+import { playAnswerFeedback } from "~/lib/feedback";
+import { vibrateAnswerFeedback } from "~/lib/haptics";
 import { buildMeta } from "~/lib/seo";
 import { soundEnabled } from "~/lib/settings";
 
@@ -153,6 +155,8 @@ export default component$(() => {
     if (correct) state.correctCount++;
     else state.missedIds = [...new Set([...state.missedIds, q.kanaId])];
     recordAnswer(script, q.kanaId, correct);
+    playAnswerFeedback(correct);
+    vibrateAnswerFeedback(correct);
     requestAnimationFrame(() =>
       document.getElementById("quiz-next")?.focus({ preventScroll: true }),
     );
