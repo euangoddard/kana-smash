@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url("/fonts/bricolage-grotesque.woff2") format("woff2");
+}
+
+@theme {
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-kana:
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic",
+    sans-serif;
+
+  /* Washi-paper study-notebook palette (warm-tinted throughout). */
+  --color-paper: oklch(96.5% 0.017 85);
+  --color-paper-deep: oklch(92.5% 0.022 83);
+  --color-paper-line: oklch(87% 0.025 80);
+  --color-ink: oklch(26% 0.02 55);
+  --color-ink-soft: oklch(45% 0.022 55);
+  --color-ink-faint: oklch(58% 0.02 55);
+
+  /* Ai-iro indigo: the primary action colour. */
+  --color-indigo-ai: oklch(42% 0.085 265);
+  --color-indigo-deep: oklch(34% 0.08 265);
+  --color-indigo-wash: oklch(90% 0.03 265);
+
+  /* Shu-iro vermillion: hanko-stamp accent, also "incorrect". */
+  --color-shu: oklch(56% 0.175 32);
+  --color-shu-deep: oklch(48% 0.16 32);
+  --color-shu-wash: oklch(91% 0.04 32);
+
+  /* Matcha green: "correct" / mastered. */
+  --color-matcha: oklch(50% 0.1 148);
+  --color-matcha-wash: oklch(91% 0.05 148);
+
+  /* Heatmap midpoints. */
+  --color-heat-low: oklch(62% 0.16 32);
+  --color-heat-mid: oklch(78% 0.12 78);
+  --color-heat-high: oklch(80% 0.1 148);
+
+  --animate-stamp: stamp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-rise: rise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes stamp {
+    0% {
+      opacity: 0;
+      transform: scale(1.6) rotate(-8deg);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(-4deg);
+    }
+  }
+
+  @keyframes rise {
+    0% {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+html {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Clear, consistent keyboard focus everywhere. */
+:focus-visible {
+  outline: 3px solid var(--color-indigo-ai);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
