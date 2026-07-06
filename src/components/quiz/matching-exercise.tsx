@@ -12,7 +12,8 @@ import { vibrateAnswerFeedback } from "~/lib/haptics";
 interface MatchingExerciseProps {
   pairs: Kana[];
   script: Script;
-  onComplete$: QRL<() => void>;
+  /** Fires once every pair is matched, with the total number of wrong guesses. */
+  onComplete$: QRL<(mistakes: number) => void>;
 }
 
 interface MatchState {
@@ -23,6 +24,8 @@ interface MatchState {
   selectedRomaji: string | null;
   /** True for the brief moment a wrong pair is shown in red. */
   mistake: boolean;
+  /** Count of wrong pairings this round — shown on the results screen, not scored. */
+  mistakeCount: number;
 }
 
 const shuffleIds = (ids: string[]): string[] => {
@@ -63,6 +66,7 @@ export const MatchingExercise = component$<MatchingExerciseProps>(
         selectedKana: null,
         selectedRomaji: null,
         mistake: false,
+        mistakeCount: 0,
       };
     });
 
@@ -90,6 +94,7 @@ export const MatchingExercise = component$<MatchingExerciseProps>(
         vibrateAnswerFeedback(true);
       } else {
         state.mistake = true;
+        state.mistakeCount++;
         playAnswerFeedback(false);
         vibrateAnswerFeedback(false);
       }
@@ -186,7 +191,7 @@ export const MatchingExercise = component$<MatchingExerciseProps>(
             </p>
             <button
               type="button"
-              onClick$={onComplete$}
+              onClick$={() => onComplete$(state.mistakeCount)}
               class="btn-primary mt-3 min-h-12 px-8 py-3"
             >
               See results

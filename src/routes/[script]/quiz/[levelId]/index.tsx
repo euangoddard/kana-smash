@@ -82,6 +82,8 @@ interface QuizState {
   soundMissing: boolean;
   /** Kana for the closing matching round; unscored, so never sent to progress. */
   matchIds: string[];
+  /** Wrong guesses in the matching round; null until that round finishes. */
+  matchMistakes: number | null;
 }
 
 const WEAK_POOL_SIZE = 8;
@@ -114,6 +116,7 @@ export default component$(() => {
     includeSound: false,
     soundMissing: false,
     matchIds: [],
+    matchMistakes: null,
   });
 
   // Read params fresh from `loc` rather than closing over the outer
@@ -152,6 +155,7 @@ export default component$(() => {
       includeSound,
     });
     state.matchIds = buildMatchSet(pool).map((k) => k.id);
+    state.matchMistakes = null;
     state.index = 0;
     state.selected = null;
     state.correctCount = 0;
@@ -216,8 +220,10 @@ export default component$(() => {
   });
 
   // The matching round is a final check, not a scored question — it never
-  // calls recordAnswer, so it can't affect saved proficiency.
-  const finishMatching = $(() => {
+  // calls recordAnswer, so it can't affect saved proficiency. The mistake
+  // count is kept only to show on the results screen.
+  const finishMatching = $((mistakes: number) => {
+    state.matchMistakes = mistakes;
     state.phase = "done";
   });
 
@@ -310,6 +316,11 @@ export default component$(() => {
           script={script}
           onRetry$={startQuiz}
           nextLevel={isWeakAreas ? undefined : nextLevel(levelId)}
+          matchStats={
+            state.matchMistakes !== null
+              ? { pairs: state.matchIds.length, mistakes: state.matchMistakes }
+              : undefined
+          }
         />
       )}
     </>

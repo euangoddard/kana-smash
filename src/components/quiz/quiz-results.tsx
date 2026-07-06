@@ -7,6 +7,11 @@ interface NextLevel {
   title: string;
 }
 
+interface MatchStats {
+  pairs: number;
+  mistakes: number;
+}
+
 interface QuizResultsProps {
   correctCount: number;
   total: number;
@@ -14,11 +19,21 @@ interface QuizResultsProps {
   script: Script;
   onRetry$: QRL<() => void>;
   nextLevel?: NextLevel;
+  /** Final matching-round tally — informational only, not part of the score. */
+  matchStats?: MatchStats;
 }
 
 /** End-of-session score, missed kana, and next-step actions. */
 export const QuizResults = component$<QuizResultsProps>(
-  ({ correctCount, total, missedIds, script, onRetry$, nextLevel }) => (
+  ({
+    correctCount,
+    total,
+    missedIds,
+    script,
+    onRetry$,
+    nextLevel,
+    matchStats,
+  }) => (
     <div class="mt-10 text-center" aria-live="polite">
       <p class="eyebrow">Session complete</p>
       <p class="font-display mt-4 text-6xl font-bold">
@@ -52,6 +67,15 @@ export const QuizResults = component$<QuizResultsProps>(
             })}
           </ul>
         </div>
+      )}
+
+      {matchStats && (
+        <p class="text-ink-soft mt-4 text-sm">
+          Final matching round: all {matchStats.pairs} paired
+          {matchStats.mistakes === 0
+            ? " on the first try."
+            : ` after ${matchStats.mistakes} mistake${matchStats.mistakes === 1 ? "" : "s"}.`}
+        </p>
       )}
 
       <div class="mt-8 flex flex-wrap justify-center gap-3">
