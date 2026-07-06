@@ -20,7 +20,12 @@ import {
   SCRIPTS,
   type Script,
 } from "~/data/kana";
-import { LEVELS, LEVELS_BY_ID, WEAK_AREAS_LEVEL_ID } from "~/data/levels";
+import {
+  LEVELS,
+  LEVELS_BY_ID,
+  nextLevel,
+  WEAK_AREAS_LEVEL_ID,
+} from "~/data/levels";
 import {
   hasWeakAreaData,
   loadProgress,
@@ -245,6 +250,7 @@ export default component$(() => {
           missedIds={state.missedIds}
           script={script}
           onRetry$={startQuiz}
+          nextLevel={isWeakAreas ? undefined : nextLevel(levelId)}
         />
       )}
     </>

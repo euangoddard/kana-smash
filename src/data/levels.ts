@@ -95,6 +95,12 @@ export const LEVELS_BY_ID: ReadonlyMap<string, Level> = new Map(
   LEVELS.map((l) => [l.id, l]),
 );
 
+/** The level after `levelId` in course order, if any. */
+export const nextLevel = (levelId: string): Level | undefined => {
+  const index = LEVELS.findIndex((l) => l.id === levelId);
+  return index === -1 ? undefined : LEVELS[index + 1];
+};
+
 export const SECTION_LABELS: Record<LevelSection, string> = {
   basics: "The basics",
   dakuten: "Marked kana — dakuten & handakuten",

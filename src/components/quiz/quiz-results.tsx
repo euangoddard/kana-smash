@@ -2,17 +2,23 @@ import { component$, type QRL } from "@builder.io/qwik";
 import { Link } from "@builder.io/qwik-city";
 import { displayKana, KANA_BY_ID, type Script } from "~/data/kana";
 
+interface NextLevel {
+  id: string;
+  title: string;
+}
+
 interface QuizResultsProps {
   correctCount: number;
   total: number;
   missedIds: string[];
   script: Script;
   onRetry$: QRL<() => void>;
+  nextLevel?: NextLevel;
 }
 
 /** End-of-session score, missed kana, and next-step actions. */
 export const QuizResults = component$<QuizResultsProps>(
-  ({ correctCount, total, missedIds, script, onRetry$ }) => (
+  ({ correctCount, total, missedIds, script, onRetry$, nextLevel }) => (
     <div class="mt-10 text-center" aria-live="polite">
       <p class="font-display text-ink-faint text-sm font-bold tracking-widest uppercase">
         Session complete
@@ -54,10 +60,22 @@ export const QuizResults = component$<QuizResultsProps>(
       )}
 
       <div class="mt-8 flex flex-wrap justify-center gap-3">
+        {nextLevel && (
+          <Link
+            href={`/${script}/quiz/${nextLevel.id}/`}
+            class="bg-indigo-ai text-paper hover:bg-indigo-deep min-h-12 rounded-xl px-6 py-3 font-semibold transition-colors"
+          >
+            Next: {nextLevel.title}
+          </Link>
+        )}
         <button
           type="button"
           onClick$={onRetry$}
-          class="bg-indigo-ai text-paper hover:bg-indigo-deep min-h-12 rounded-xl px-6 py-3 font-semibold transition-colors"
+          class={
+            nextLevel
+              ? "border-paper-line text-ink hover:border-indigo-ai grid min-h-12 place-items-center rounded-xl border-2 px-6 py-3 font-semibold transition-colors"
+              : "bg-indigo-ai text-paper hover:bg-indigo-deep min-h-12 rounded-xl px-6 py-3 font-semibold transition-colors"
+          }
         >
           Go again
         </button>
