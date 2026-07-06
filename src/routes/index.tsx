@@ -114,10 +114,7 @@ export default component$(() => {
           Every answer is tracked on this device. A heatmap shows which kana
           trip you up, and a focused mode drills just those.
         </p>
-        <Link
-          href="/progress/"
-          class="btn-primary mt-4 inline-block px-5 py-3"
-        >
+        <Link href="/progress/" class="btn-primary mt-4 inline-block px-5 py-3">
           See my progress
         </Link>
       </section>

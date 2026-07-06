@@ -13,6 +13,7 @@ import {
 } from "@builder.io/qwik-city";
 import { AnswerOptions } from "~/components/quiz/answer-options";
 import { BackLink } from "~/components/back-link";
+import { MatchingExercise } from "~/components/quiz/matching-exercise";
 import { QuizEmpty } from "~/components/quiz/quiz-empty";
 import { QuizFeedback } from "~/components/quiz/quiz-feedback";
 import { QuizProgress } from "~/components/quiz/quiz-progress";
@@ -39,6 +40,7 @@ import {
   weakKana,
 } from "~/lib/progress";
 import {
+  buildMatchSet,
   DEFAULT_QUESTION_COUNT,
   generateQuiz,
   type Question,
@@ -64,7 +66,7 @@ export const onStaticGenerate: StaticGenerateHandler = () => ({
   ),
 });
 
-type Phase = "loading" | "empty" | "question" | "done";
+type Phase = "loading" | "empty" | "question" | "matching" | "done";
 
 interface QuizState {
   phase: Phase;
@@ -78,9 +80,14 @@ interface QuizState {
   includeSound: boolean;
   /** True when listening questions were wanted but no Japanese voice exists. */
   soundMissing: boolean;
+  /** Kana for the closing matching round; unscored, so never sent to progress. */
+  matchIds: string[];
 }
 
 const WEAK_POOL_SIZE = 8;
+
+/** Below this a matching round isn't a real puzzle, so it's skipped. */
+const MIN_MATCH_PAIRS = 2;
 
 const KIND_PROMPTS = {
   "kana-to-romaji": "What sound does this make?",
@@ -106,6 +113,7 @@ export default component$(() => {
     poolIds: [],
     includeSound: false,
     soundMissing: false,
+    matchIds: [],
   });
 
   // Read params fresh from `loc` rather than closing over the outer
@@ -143,6 +151,7 @@ export default component$(() => {
       questionCount: DEFAULT_QUESTION_COUNT,
       includeSound,
     });
+    state.matchIds = buildMatchSet(pool).map((k) => k.id);
     state.index = 0;
     state.selected = null;
     state.correctCount = 0;
@@ -198,11 +207,18 @@ export default component$(() => {
 
   const next = $(() => {
     if (state.index + 1 >= state.questions.length) {
-      state.phase = "done";
+      state.phase =
+        state.matchIds.length >= MIN_MATCH_PAIRS ? "matching" : "done";
     } else {
       state.index++;
       state.selected = null;
     }
+  });
+
+  // The matching round is a final check, not a scored question — it never
+  // calls recordAnswer, so it can't affect saved proficiency.
+  const finishMatching = $(() => {
+    state.phase = "done";
   });
 
   const q = state.questions[state.index];
@@ -269,6 +285,20 @@ export default component$(() => {
               />
             )}
           </div>
+        </div>
+      )}
+
+      {state.phase === "matching" && (
+        <div class="mt-4">
+          <p class="eyebrow text-center">Final round</p>
+          <h1 class="font-display text-ink-soft mt-2 text-center text-lg font-semibold">
+            Match every character to its sound
+          </h1>
+          <MatchingExercise
+            pairs={state.matchIds.map((id) => KANA_BY_ID.get(id)!)}
+            script={script}
+            onComplete$={finishMatching}
+          />
         </div>
       )}
 

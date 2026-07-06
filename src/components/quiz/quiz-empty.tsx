@@ -13,10 +13,7 @@ export const QuizEmpty = component$<QuizEmptyProps>(({ script }) => (
       Weak-spot sessions are built from your mistakes. Complete a couple of
       regular levels first, then come back.
     </p>
-    <Link
-      href={`/${script}/`}
-      class="btn-primary mt-6 inline-block px-5 py-3"
-    >
+    <Link href={`/${script}/`} class="btn-primary mt-6 inline-block px-5 py-3">
       Choose a level
     </Link>
   </div>

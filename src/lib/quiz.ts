@@ -136,3 +136,20 @@ export const generateQuiz = (
 };
 
 export const DEFAULT_QUESTION_COUNT = 10;
+
+/**
+ * Up to `count` kana for the closing matching round, picked at random from
+ * `pool`. Never two kana that share a romaji (e.g. じ and ぢ both "ji") —
+ * that would make the matching puzzle ambiguous.
+ */
+export const buildMatchSet = (pool: Kana[], count = 5): Kana[] => {
+  const chosen: Kana[] = [];
+  const usedRomaji = new Set<string>();
+  for (const kana of shuffle(pool)) {
+    if (chosen.length >= count) break;
+    if (usedRomaji.has(kana.romaji)) continue;
+    usedRomaji.add(kana.romaji);
+    chosen.push(kana);
+  }
+  return chosen;
+};
