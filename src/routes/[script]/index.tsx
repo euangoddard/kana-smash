@@ -96,7 +96,7 @@ export default component$(() => {
             </span>
           </Link>
         ) : (
-          <div class="border-paper-line text-ink-soft rounded-2xl border-2 border-dashed p-5 text-sm">
+          <div class="dashed-panel text-ink-soft p-5 text-sm">
             <span class="text-ink font-semibold">
               Weak-spot practice unlocks with data.
             </span>{" "}
@@ -112,9 +112,7 @@ export default component$(() => {
           class="mt-10"
           aria-label={SECTION_LABELS[section]}
         >
-          <h2 class="font-display text-ink-faint text-sm font-bold tracking-widest uppercase">
-            {SECTION_LABELS[section]}
-          </h2>
+          <h2 class="eyebrow">{SECTION_LABELS[section]}</h2>
           <ul class="mt-3 space-y-2">
             {LEVELS.filter((l) => l.section === section).map((level) => (
               <LevelCard

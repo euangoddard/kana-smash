@@ -15,7 +15,7 @@ export const QuizEmpty = component$<QuizEmptyProps>(({ script }) => (
     </p>
     <Link
       href={`/${script}/`}
-      class="bg-indigo-ai text-paper hover:bg-indigo-deep mt-6 inline-block rounded-xl px-5 py-3 font-semibold"
+      class="btn-primary mt-6 inline-block px-5 py-3"
     >
       Choose a level
     </Link>

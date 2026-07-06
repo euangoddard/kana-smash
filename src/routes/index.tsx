@@ -116,7 +116,7 @@ export default component$(() => {
         </p>
         <Link
           href="/progress/"
-          class="bg-indigo-ai text-paper hover:bg-indigo-deep mt-4 inline-block rounded-xl px-5 py-3 font-semibold transition-colors"
+          class="btn-primary mt-4 inline-block px-5 py-3"
         >
           See my progress
         </Link>

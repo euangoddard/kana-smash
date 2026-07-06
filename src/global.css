@@ -90,3 +90,40 @@ html {
     transition-duration: 0.01ms !important;
   }
 }
+
+@layer components {
+  /* Small uppercase section label, e.g. "BASICS", "SESSION COMPLETE". */
+  .eyebrow {
+    @apply font-display text-ink-faint text-sm font-bold tracking-widest uppercase;
+  }
+
+  /* Solid indigo call-to-action. Pair with your own padding/margin/display. */
+  .btn-primary {
+    @apply bg-indigo-ai text-paper hover:bg-indigo-deep rounded-xl font-semibold transition-colors;
+  }
+
+  /* Bordered secondary action button, fixed size. */
+  .btn-outline {
+    @apply border-paper-line text-ink hover:border-indigo-ai grid min-h-12 place-items-center rounded-xl border-2 px-6 py-3 font-semibold transition-colors;
+  }
+
+  /* Bordered row that highlights on hover/focus, e.g. level and toggle links. */
+  .card-link {
+    @apply border-paper-line hover:border-indigo-ai flex items-center rounded-xl border-2 transition-colors;
+  }
+
+  /* Dashed-border panel for empty/locked states. */
+  .dashed-panel {
+    @apply border-paper-line rounded-2xl border-2 border-dashed;
+  }
+
+  /* Compact rounded pill for a kana + label, e.g. weak-spot and missed lists. */
+  .chip {
+    @apply rounded-lg px-3 py-1.5;
+  }
+
+  /* Stamped correct/incorrect badge overlaid on an answer option. */
+  .answer-stamp {
+    @apply animate-stamp text-paper absolute -top-2 -right-2 grid size-8 place-items-center rounded-full text-lg font-bold;
+  }
+}

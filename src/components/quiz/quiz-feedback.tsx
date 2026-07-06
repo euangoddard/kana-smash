@@ -25,7 +25,7 @@ export const QuizFeedback = component$<QuizFeedbackProps>(
         id="quiz-next"
         type="button"
         onClick$={onNext$}
-        class="bg-indigo-ai text-paper hover:bg-indigo-deep mt-3 min-h-12 rounded-xl px-8 py-3 font-semibold transition-colors"
+        class="btn-primary mt-3 min-h-12 px-8 py-3"
       >
         {isLastQuestion ? "See results" : "Next question"}
       </button>

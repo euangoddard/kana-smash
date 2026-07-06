@@ -49,7 +49,7 @@ export const AnswerOptions = component$<AnswerOptionsProps>(
               {answered && isCorrect && (
                 <span
                   aria-hidden="true"
-                  class="animate-stamp bg-matcha text-paper absolute -top-2 -right-2 grid size-8 place-items-center rounded-full text-lg font-bold"
+                  class="answer-stamp bg-matcha"
                 >
                   ◯
                 </span>
@@ -57,7 +57,7 @@ export const AnswerOptions = component$<AnswerOptionsProps>(
               {answered && isSelected && !isCorrect && (
                 <span
                   aria-hidden="true"
-                  class="animate-stamp bg-shu text-paper absolute -top-2 -right-2 grid size-8 place-items-center rounded-full text-lg font-bold"
+                  class="answer-stamp bg-shu"
                 >
                   ✕
                 </span>

@@ -127,7 +127,7 @@ export default component$(() => {
       </div>
 
       {loaded.value && attemptedCount === 0 && (
-        <div class="border-paper-line mt-8 rounded-2xl border-2 border-dashed p-6 text-center">
+        <div class="dashed-panel mt-8 p-6 text-center">
           <p class="font-display text-lg font-bold">
             No {SCRIPT_LABELS[script].en.toLowerCase()} answers yet.
           </p>
@@ -137,7 +137,7 @@ export default component$(() => {
           </p>
           <Link
             href={`/${script}/`}
-            class="bg-indigo-ai text-paper hover:bg-indigo-deep mt-5 inline-block rounded-xl px-5 py-3 font-semibold"
+            class="btn-primary mt-5 inline-block px-5 py-3"
           >
             Start practising
           </Link>
@@ -152,10 +152,7 @@ export default component$(() => {
           <h2 class="font-display text-lg font-bold">Current weak spots</h2>
           <ul class="mt-3 flex flex-wrap gap-2">
             {weakest.map((s) => (
-              <li
-                key={s.kana.id}
-                class="bg-paper text-shu-deep rounded-lg px-3 py-1.5"
-              >
+              <li key={s.kana.id} class="chip bg-paper text-shu-deep">
                 <span lang="ja" class="font-kana text-xl">
                   {displayKana(s.kana, script)}
                 </span>{" "}

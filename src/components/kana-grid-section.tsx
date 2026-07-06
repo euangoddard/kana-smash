@@ -17,9 +17,7 @@ interface KanaGridSectionProps {
 export const KanaGridSection = component$<KanaGridSectionProps>(
   ({ title, rows, vowels, script, stats }) => (
     <section class="mt-8" aria-label={`${title} accuracy grid`}>
-      <h2 class="font-display text-ink-faint text-sm font-bold tracking-widest uppercase">
-        {title}
-      </h2>
+      <h2 class="eyebrow">{title}</h2>
       <div class="mt-3 space-y-1.5">
         {rows.map((row) => (
           <ul key={row} class="grid grid-cols-5 gap-1.5">

@@ -12,7 +12,7 @@ export const SoundToggle = component$<SoundToggleProps>(({ on, onToggle$ }) => (
     role="switch"
     aria-checked={on}
     onClick$={onToggle$}
-    class="border-paper-line text-ink-soft hover:border-indigo-ai flex min-h-12 items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-medium transition-colors"
+    class="card-link text-ink-soft min-h-12 gap-2 px-3 py-2 text-sm font-medium"
   >
     <span aria-hidden="true">{on ? "🔊" : "🔇"}</span>
     Listening questions

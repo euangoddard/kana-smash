@@ -20,9 +20,7 @@ interface QuizResultsProps {
 export const QuizResults = component$<QuizResultsProps>(
   ({ correctCount, total, missedIds, script, onRetry$, nextLevel }) => (
     <div class="mt-10 text-center" aria-live="polite">
-      <p class="font-display text-ink-faint text-sm font-bold tracking-widest uppercase">
-        Session complete
-      </p>
+      <p class="eyebrow">Session complete</p>
       <p class="font-display mt-4 text-6xl font-bold">
         {correctCount}
         <span class="text-ink-faint text-2xl"> / {total}</span>
@@ -44,10 +42,7 @@ export const QuizResults = component$<QuizResultsProps>(
             {missedIds.map((id) => {
               const missed = KANA_BY_ID.get(id)!;
               return (
-                <li
-                  key={id}
-                  class="bg-shu-wash text-shu-deep rounded-lg px-3 py-1.5"
-                >
+                <li key={id} class="chip bg-shu-wash text-shu-deep">
                   <span lang="ja" class="font-kana text-xl">
                     {displayKana(missed, script)}
                   </span>{" "}
@@ -63,7 +58,7 @@ export const QuizResults = component$<QuizResultsProps>(
         {nextLevel && (
           <Link
             href={`/${script}/quiz/${nextLevel.id}/`}
-            class="bg-indigo-ai text-paper hover:bg-indigo-deep min-h-12 rounded-xl px-6 py-3 font-semibold transition-colors"
+            class="btn-primary min-h-12 px-6 py-3"
           >
             Next: {nextLevel.title}
           </Link>
@@ -71,24 +66,14 @@ export const QuizResults = component$<QuizResultsProps>(
         <button
           type="button"
           onClick$={onRetry$}
-          class={
-            nextLevel
-              ? "border-paper-line text-ink hover:border-indigo-ai grid min-h-12 place-items-center rounded-xl border-2 px-6 py-3 font-semibold transition-colors"
-              : "bg-indigo-ai text-paper hover:bg-indigo-deep min-h-12 rounded-xl px-6 py-3 font-semibold transition-colors"
-          }
+          class={nextLevel ? "btn-outline" : "btn-primary min-h-12 px-6 py-3"}
         >
           Go again
         </button>
-        <Link
-          href={`/${script}/`}
-          class="border-paper-line text-ink hover:border-indigo-ai grid min-h-12 place-items-center rounded-xl border-2 px-6 py-3 font-semibold transition-colors"
-        >
+        <Link href={`/${script}/`} class="btn-outline">
           All levels
         </Link>
-        <Link
-          href="/progress/"
-          class="border-paper-line text-ink hover:border-indigo-ai grid min-h-12 place-items-center rounded-xl border-2 px-6 py-3 font-semibold transition-colors"
-        >
+        <Link href="/progress/" class="btn-outline">
           My progress
         </Link>
       </div>

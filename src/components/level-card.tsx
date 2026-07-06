@@ -30,7 +30,7 @@ export const LevelCard = component$<LevelCardProps>(
       <li>
         <Link
           href={`/${script}/quiz/${level.id}/`}
-          class="border-paper-line hover:border-indigo-ai flex min-h-16 items-center gap-4 rounded-xl border-2 px-4 py-3 transition-colors"
+          class="card-link min-h-16 gap-4 px-4 py-3"
         >
           <span
             lang="ja"
