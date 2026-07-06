@@ -1,4 +1,10 @@
-import { $, component$, useStore, useVisibleTask$ } from "@builder.io/qwik";
+import {
+  $,
+  component$,
+  useStore,
+  useTask$,
+  useVisibleTask$,
+} from "@builder.io/qwik";
 import {
   useLocation,
   type DocumentHead,
@@ -102,14 +108,24 @@ export default component$(() => {
     soundMissing: false,
   });
 
+  // Read params fresh from `loc` rather than closing over the outer
+  // `script`/`level` consts: this function is invoked from a task$ effect,
+  // and Qwik only registers a task's callback once at mount, so a closure
+  // over those consts would keep replaying the level active when the quiz
+  // first mounted even after navigating to a different level.
   const buildPoolIds = $((): string[] => {
-    if (!isWeakAreas) return level?.kanaIds ?? [];
+    const currentLevelId = loc.params.levelId;
+    if (currentLevelId !== WEAK_AREAS_LEVEL_ID) {
+      return LEVELS_BY_ID.get(currentLevelId)?.kanaIds ?? [];
+    }
+    const currentScript = loc.params.script as Script;
     const data = loadProgress();
-    if (!hasWeakAreaData(data, script)) return [];
-    return weakKana(data, script, WEAK_POOL_SIZE).map((k) => k.id);
+    if (!hasWeakAreaData(data, currentScript)) return [];
+    return weakKana(data, currentScript, WEAK_POOL_SIZE).map((k) => k.id);
   });
 
   const startQuiz = $(async () => {
+    const currentScript = loc.params.script as Script;
     const poolIds = await buildPoolIds();
     if (!poolIds.length) {
       state.phase = "empty";
@@ -123,7 +139,7 @@ export default component$(() => {
     state.includeSound = includeSound;
     state.soundMissing = soundWanted && !includeSound;
     const pool = poolIds.map((id) => KANA_BY_ID.get(id)!);
-    state.questions = generateQuiz(pool, script, {
+    state.questions = generateQuiz(pool, currentScript, {
       questionCount: DEFAULT_QUESTION_COUNT,
       includeSound,
     });
@@ -134,9 +150,22 @@ export default component$(() => {
     state.phase = "question";
   });
 
+  // Reset synchronously on navigation to a new level so the stale "done"
+  // screen doesn't flash while the new quiz builds client-side.
+  useTask$(({ track }) => {
+    track(() => loc.params.script);
+    track(() => loc.params.levelId);
+    state.phase = "loading";
+  });
+
   // Quiz content depends on localStorage + Math.random, so build client-side.
+  // Track the route params too: Qwik City's Link reuses this component
+  // instance across same-route navigations, so without a tracked dependency
+  // this task only fires once and never rebuilds the quiz for the new level.
   // eslint-disable-next-line qwik/no-use-visible-task
-  useVisibleTask$(() => {
+  useVisibleTask$(({ track }) => {
+    track(() => loc.params.script);
+    track(() => loc.params.levelId);
     void startQuiz();
   });
 
