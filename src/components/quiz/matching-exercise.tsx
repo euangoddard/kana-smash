@@ -5,23 +5,34 @@ import {
   useVisibleTask$,
   type QRL,
 } from "@builder.io/qwik";
-import { displayKana, type Kana, type Script } from "~/data/kana";
 import { playAnswerFeedback } from "~/lib/feedback";
 import { vibrateAnswerFeedback } from "~/lib/haptics";
 
+export interface MatchPair {
+  id: string;
+  /** Japanese side: a kana glyph or a kanji character. */
+  left: string;
+  /** Answer side: romaji or an English meaning. */
+  right: string;
+}
+
 interface MatchingExerciseProps {
-  pairs: Kana[];
-  script: Script;
+  pairs: MatchPair[];
+  /** aria labels for the two columns. */
+  leftLabel: string;
+  rightLabel: string;
+  /** Typography for the answer column, e.g. "text-xl lowercase". */
+  rightClass: string;
   /** Fires once every pair is matched, with the total number of wrong guesses. */
   onComplete$: QRL<(mistakes: number) => void>;
 }
 
 interface MatchState {
-  kanaOrder: string[];
-  romajiOrder: string[];
+  leftOrder: string[];
+  rightOrder: string[];
   matchedIds: string[];
-  selectedKana: string | null;
-  selectedRomaji: string | null;
+  selectedLeft: string | null;
+  selectedRight: string | null;
   /** True for the brief moment a wrong pair is shown in red. */
   mistake: boolean;
   /** Count of wrong pairings this round — shown on the results screen, not scored. */
@@ -51,20 +62,20 @@ const tileClass = (status: "idle" | "selected" | "wrong" | "matched") => {
 };
 
 /**
- * Final matching round for a level: pair every kana with its romaji.
+ * Final matching round for a level: pair every character with its answer.
  * Wrong pairs flash red and reset — this isn't scored, so the only way
  * through is matching everything, and it never touches saved progress.
  */
 export const MatchingExercise = component$<MatchingExerciseProps>(
-  ({ pairs, script, onComplete$ }) => {
+  ({ pairs, leftLabel, rightLabel, rightClass, onComplete$ }) => {
     const state = useStore<MatchState>(() => {
-      const ids = pairs.map((k) => k.id);
+      const ids = pairs.map((p) => p.id);
       return {
-        kanaOrder: shuffleIds(ids),
-        romajiOrder: shuffleIds(ids),
+        leftOrder: shuffleIds(ids),
+        rightOrder: shuffleIds(ids),
         matchedIds: [],
-        selectedKana: null,
-        selectedRomaji: null,
+        selectedLeft: null,
+        selectedRight: null,
         mistake: false,
         mistakeCount: 0,
       };
@@ -74,22 +85,22 @@ export const MatchingExercise = component$<MatchingExerciseProps>(
     useVisibleTask$(({ track, cleanup }) => {
       if (!track(() => state.mistake)) return;
       const timer = setTimeout(() => {
-        state.selectedKana = null;
-        state.selectedRomaji = null;
+        state.selectedLeft = null;
+        state.selectedRight = null;
         state.mistake = false;
       }, 550);
       cleanup(() => clearTimeout(timer));
     });
 
-    const byId = new Map(pairs.map((k) => [k.id, k]));
+    const byId = new Map(pairs.map((p) => [p.id, p]));
 
     const evaluate = $(() => {
-      const { selectedKana, selectedRomaji } = state;
-      if (selectedKana == null || selectedRomaji == null) return;
-      if (selectedKana === selectedRomaji) {
-        state.matchedIds = [...state.matchedIds, selectedKana];
-        state.selectedKana = null;
-        state.selectedRomaji = null;
+      const { selectedLeft, selectedRight } = state;
+      if (selectedLeft == null || selectedRight == null) return;
+      if (selectedLeft === selectedRight) {
+        state.matchedIds = [...state.matchedIds, selectedLeft];
+        state.selectedLeft = null;
+        state.selectedRight = null;
         playAnswerFeedback(true);
         vibrateAnswerFeedback(true);
       } else {
@@ -100,15 +111,15 @@ export const MatchingExercise = component$<MatchingExerciseProps>(
       }
     });
 
-    const pickKana = $((id: string) => {
+    const pickLeft = $((id: string) => {
       if (state.mistake || state.matchedIds.includes(id)) return;
-      state.selectedKana = id;
+      state.selectedLeft = id;
       void evaluate();
     });
 
-    const pickRomaji = $((id: string) => {
+    const pickRight = $((id: string) => {
       if (state.mistake || state.matchedIds.includes(id)) return;
-      state.selectedRomaji = id;
+      state.selectedRight = id;
       void evaluate();
     });
 
@@ -121,11 +132,10 @@ export const MatchingExercise = component$<MatchingExerciseProps>(
         </p>
 
         <div class="mt-4 grid grid-cols-2 gap-3">
-          <div class="flex flex-col gap-3" role="group" aria-label="Characters">
-            {state.kanaOrder.map((id) => {
-              const kana = byId.get(id)!;
+          <div class="flex flex-col gap-3" role="group" aria-label={leftLabel}>
+            {state.leftOrder.map((id) => {
               const matched = state.matchedIds.includes(id);
-              const selected = state.selectedKana === id;
+              const selected = state.selectedLeft === id;
               const status = matched
                 ? "matched"
                 : state.mistake && selected
@@ -140,20 +150,19 @@ export const MatchingExercise = component$<MatchingExerciseProps>(
                   lang="ja"
                   disabled={matched}
                   aria-pressed={selected}
-                  onClick$={() => pickKana(id)}
+                  onClick$={() => pickLeft(id)}
                   class={`font-kana min-h-16 rounded-2xl border-2 text-3xl transition-colors ${tileClass(status)}`}
                 >
-                  {displayKana(kana, script)}
+                  {byId.get(id)!.left}
                 </button>
               );
             })}
           </div>
 
-          <div class="flex flex-col gap-3" role="group" aria-label="Sounds">
-            {state.romajiOrder.map((id) => {
-              const kana = byId.get(id)!;
+          <div class="flex flex-col gap-3" role="group" aria-label={rightLabel}>
+            {state.rightOrder.map((id) => {
               const matched = state.matchedIds.includes(id);
-              const selected = state.selectedRomaji === id;
+              const selected = state.selectedRight === id;
               const status = matched
                 ? "matched"
                 : state.mistake && selected
@@ -167,10 +176,10 @@ export const MatchingExercise = component$<MatchingExerciseProps>(
                   type="button"
                   disabled={matched}
                   aria-pressed={selected}
-                  onClick$={() => pickRomaji(id)}
-                  class={`font-display min-h-16 rounded-2xl border-2 text-xl font-semibold lowercase transition-colors ${tileClass(status)}`}
+                  onClick$={() => pickRight(id)}
+                  class={`font-display min-h-16 rounded-2xl border-2 px-2 font-semibold transition-colors ${rightClass} ${tileClass(status)}`}
                 >
-                  {kana.romaji}
+                  {byId.get(id)!.right}
                 </button>
               );
             })}

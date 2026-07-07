@@ -1,10 +1,11 @@
 import { component$, type QRL } from "@builder.io/qwik";
 import { Link } from "@builder.io/qwik-city";
-import { displayKana, KANA_BY_ID, type Script } from "~/data/kana";
 
-interface NextLevel {
+/** One missed item chip: what was shown plus a short reminder of the answer. */
+export interface MissedItem {
   id: string;
-  title: string;
+  glyph: string;
+  hint: string;
 }
 
 interface MatchStats {
@@ -15,23 +16,25 @@ interface MatchStats {
 interface QuizResultsProps {
   correctCount: number;
   total: number;
-  missedIds: string[];
-  script: Script;
+  missed: MissedItem[];
   onRetry$: QRL<() => void>;
-  nextLevel?: NextLevel;
+  nextHref?: string;
+  nextTitle?: string;
+  levelsHref: string;
   /** Final matching-round tally — informational only, not part of the score. */
   matchStats?: MatchStats;
 }
 
-/** End-of-session score, missed kana, and next-step actions. */
+/** End-of-session score, missed characters, and next-step actions. */
 export const QuizResults = component$<QuizResultsProps>(
   ({
     correctCount,
     total,
-    missedIds,
-    script,
+    missed,
     onRetry$,
-    nextLevel,
+    nextHref,
+    nextTitle,
+    levelsHref,
     matchStats,
   }) => (
     <div class="mt-10 text-center" aria-live="polite">
@@ -48,23 +51,20 @@ export const QuizResults = component$<QuizResultsProps>(
             : "Good practice — these characters just need more reps."}
       </p>
 
-      {missedIds.length > 0 && (
+      {missed.length > 0 && (
         <div class="border-paper-line mx-auto mt-6 max-w-sm rounded-2xl border-2 p-4 text-left">
           <h2 class="text-ink-soft text-sm font-semibold">
             Missed this session
           </h2>
           <ul class="mt-2 flex flex-wrap gap-2">
-            {missedIds.map((id) => {
-              const missed = KANA_BY_ID.get(id)!;
-              return (
-                <li key={id} class="chip bg-shu-wash text-shu-deep">
-                  <span lang="ja" class="font-kana text-xl">
-                    {displayKana(missed, script)}
-                  </span>{" "}
-                  <span class="text-sm">{missed.romaji}</span>
-                </li>
-              );
-            })}
+            {missed.map((item) => (
+              <li key={item.id} class="chip bg-shu-wash text-shu-deep">
+                <span lang="ja" class="font-kana text-xl">
+                  {item.glyph}
+                </span>{" "}
+                <span class="text-sm">{item.hint}</span>
+              </li>
+            ))}
           </ul>
         </div>
       )}
@@ -79,22 +79,19 @@ export const QuizResults = component$<QuizResultsProps>(
       )}
 
       <div class="mt-8 flex flex-wrap justify-center gap-3">
-        {nextLevel && (
-          <Link
-            href={`/${script}/quiz/${nextLevel.id}/`}
-            class="btn-primary min-h-12 px-6 py-3"
-          >
-            Next: {nextLevel.title}
+        {nextHref && (
+          <Link href={nextHref} class="btn-primary min-h-12 px-6 py-3">
+            Next: {nextTitle}
           </Link>
         )}
         <button
           type="button"
           onClick$={onRetry$}
-          class={nextLevel ? "btn-outline" : "btn-primary min-h-12 px-6 py-3"}
+          class={nextHref ? "btn-outline" : "btn-primary min-h-12 px-6 py-3"}
         >
           Go again
         </button>
-        <Link href={`/${script}/`} class="btn-outline">
+        <Link href={levelsHref} class="btn-outline">
           All levels
         </Link>
         <Link href="/progress/" class="btn-outline">

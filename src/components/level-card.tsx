@@ -1,7 +1,5 @@
 import { component$ } from "@builder.io/qwik";
 import { Link } from "@builder.io/qwik-city";
-import { displayKana, KANA_BY_ID, type Script } from "~/data/kana";
-import type { Level } from "~/data/levels";
 
 const masteryChip = (score: number | null | undefined) => {
   if (score === null || score === undefined) {
@@ -16,38 +14,33 @@ const masteryChip = (score: number | null | undefined) => {
 };
 
 interface LevelCardProps {
-  level: Level;
-  script: Script;
+  href: string;
+  title: string;
+  /** Sample characters shown alongside the title. */
+  sample: string;
+  characterCount: number;
   /** null = attempted but unscored, undefined = mastery not loaded yet. */
   mastery: number | null | undefined;
 }
 
-/** One level entry in a script's level list, with its mastery chip. */
+/** One level entry in a level list, with its mastery chip. */
 export const LevelCard = component$<LevelCardProps>(
-  ({ level, script, mastery }) => {
+  ({ href, title, sample, characterCount, mastery }) => {
     const chip = masteryChip(mastery);
     return (
       <li>
-        <Link
-          href={`/${script}/quiz/${level.id}/`}
-          class="card-link min-h-16 gap-4 px-4 py-3"
-        >
+        <Link href={href} class="card-link min-h-16 gap-4 px-4 py-3">
           <span
             lang="ja"
             aria-hidden="true"
             class="font-kana text-ink-soft w-24 shrink-0 text-lg"
           >
-            {level.sample
-              .map((id) => {
-                const kana = KANA_BY_ID.get(id);
-                return kana ? displayKana(kana, script) : "";
-              })
-              .join("")}
+            {sample}
           </span>
           <span class="flex-1">
-            <span class="block font-semibold">{level.title}</span>
+            <span class="block font-semibold">{title}</span>
             <span class="text-ink-faint block text-xs">
-              {level.kanaIds.length} characters
+              {characterCount} characters
             </span>
           </span>
           <span

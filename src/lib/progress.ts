@@ -8,7 +8,7 @@ import { ALL_KANA, KANA_BY_ID, type Kana, type Script } from "~/data/kana";
 const STORAGE_KEY = "kana-smash:progress:v1";
 
 /** Most recent attempts kept per kana; older ones age out. */
-const MAX_ATTEMPTS = 20;
+export const MAX_ATTEMPTS = 20;
 
 /** Recency weight decay: newest attempt weighs 1, the next 0.85, … */
 const DECAY = 0.85;

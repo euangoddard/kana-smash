@@ -5,48 +5,26 @@ import {
   useVisibleTask$,
   $,
 } from "@builder.io/qwik";
-import {
-  Link,
-  useLocation,
-  type DocumentHead,
-  type RequestHandler,
-  type StaticGenerateHandler,
-} from "@builder.io/qwik-city";
+import { Link, type DocumentHead } from "@builder.io/qwik-city";
 import { BackLink } from "~/components/back-link";
 import { LevelCard } from "~/components/level-card";
 import { SoundToggle } from "~/components/sound-toggle";
 import {
-  displayKana,
-  isScript,
-  KANA_BY_ID,
-  SCRIPT_LABELS,
-  SCRIPTS,
-  type Script,
-} from "~/data/kana";
+  KANJI_LEVELS,
+  KANJI_SECTION_LABELS,
+  KANJI_SECTIONS,
+  WEAK_KANJI_LEVEL_ID,
+} from "~/data/kanji-levels";
 import {
-  LEVELS,
-  SECTION_LABELS,
-  SECTIONS,
-  WEAK_AREAS_LEVEL_ID,
-} from "~/data/levels";
-import { hasWeakAreaData, levelMastery, loadProgress } from "~/lib/progress";
+  hasWeakKanjiData,
+  kanjiLevelMastery,
+  loadKanjiProgress,
+} from "~/lib/kanji-progress";
 import { buildMeta } from "~/lib/seo";
 import { setSoundEnabled, soundEnabled } from "~/lib/settings";
 import { findJapaneseVoice } from "~/lib/speech";
 
-export const onGet: RequestHandler = ({ params, error }) => {
-  if (!isScript(params.script)) throw error(404, "Not found");
-};
-
-export const onStaticGenerate: StaticGenerateHandler = () => ({
-  params: SCRIPTS.map((script) => ({ script })),
-});
-
 export default component$(() => {
-  const loc = useLocation();
-  const script = loc.params.script as Script;
-  const label = SCRIPT_LABELS[script];
-
   const mastery = useStore<Record<string, number | null>>({});
   const weakReady = useSignal(false);
   const soundOn = useSignal(true);
@@ -55,11 +33,11 @@ export default component$(() => {
   // Progress lives in localStorage, so all of this is client-only.
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(() => {
-    const data = loadProgress();
-    for (const level of LEVELS) {
-      mastery[level.id] = levelMastery(data, script, level.kanaIds);
+    const data = loadKanjiProgress();
+    for (const level of KANJI_LEVELS) {
+      mastery[level.id] = kanjiLevelMastery(data, level.kanjiIds);
     }
-    weakReady.value = hasWeakAreaData(data, script);
+    weakReady.value = hasWeakKanjiData(data);
     soundOn.value = soundEnabled();
     loaded.value = true;
     // Warm the voice cache so quizzes reached from here start instantly.
@@ -79,27 +57,31 @@ export default component$(() => {
 
       <header class="mt-4 flex items-end justify-between gap-4">
         <div>
-          <h1 class="font-display text-3xl font-bold tracking-tight">
-            {label.en}
-          </h1>
+          <h1 class="font-display text-3xl font-bold tracking-tight">Kanji</h1>
           <p class="text-ink-soft mt-1" lang="ja">
-            {label.ja}
+            漢字
           </p>
         </div>
         <SoundToggle on={soundOn.value} onToggle$={toggleSound} />
       </header>
 
+      <p class="text-ink-soft mt-4 max-w-md text-sm">
+        The 80 kanji of JLPT N5. Each one is drilled two ways — what it means,
+        and how it&apos;s read inside real words — and both are tracked
+        separately.
+      </p>
+
       <section class="mt-6" aria-label="Focused practice">
         {weakReady.value ? (
           <Link
-            href={`/${script}/quiz/${WEAK_AREAS_LEVEL_ID}/`}
+            href={`/kanji/quiz/${WEAK_KANJI_LEVEL_ID}/`}
             class="bg-shu text-paper hover:bg-shu-deep block rounded-2xl p-5 transition-colors"
           >
             <span class="font-display text-lg font-bold">
               Smash your weak spots
             </span>
             <span class="mt-1 block text-sm opacity-90">
-              A session built from the {label.en.toLowerCase()} you miss most.
+              A session built from the kanji you miss most.
             </span>
           </Link>
         ) : (
@@ -113,26 +95,21 @@ export default component$(() => {
         )}
       </section>
 
-      {SECTIONS.map((section) => (
+      {KANJI_SECTIONS.map((section) => (
         <section
           key={section}
           class="mt-10"
-          aria-label={SECTION_LABELS[section]}
+          aria-label={KANJI_SECTION_LABELS[section]}
         >
-          <h2 class="eyebrow">{SECTION_LABELS[section]}</h2>
+          <h2 class="eyebrow">{KANJI_SECTION_LABELS[section]}</h2>
           <ul class="mt-3 space-y-2">
-            {LEVELS.filter((l) => l.section === section).map((level) => (
+            {KANJI_LEVELS.filter((l) => l.section === section).map((level) => (
               <LevelCard
                 key={level.id}
-                href={`/${script}/quiz/${level.id}/`}
+                href={`/kanji/quiz/${level.id}/`}
                 title={level.title}
-                sample={level.sample
-                  .map((id) => {
-                    const kana = KANA_BY_ID.get(id);
-                    return kana ? displayKana(kana, script) : "";
-                  })
-                  .join("")}
-                characterCount={level.kanaIds.length}
+                sample={level.sample.join("")}
+                characterCount={level.kanjiIds.length}
                 mastery={loaded.value ? mastery[level.id] : undefined}
               />
             ))}
@@ -143,12 +120,10 @@ export default component$(() => {
   );
 });
 
-export const head: DocumentHead = ({ params, url }) => {
-  const label = isScript(params.script)
-    ? SCRIPT_LABELS[params.script].en
-    : "Kana";
-  const title = `${label} levels — Kana Smash`;
-  const description = `Practise ${label} row by row with multiple-choice and listening drills.`;
+export const head: DocumentHead = ({ url }) => {
+  const title = "Kanji levels — Kana Smash";
+  const description =
+    "Practise the 80 JLPT N5 kanji in themed levels, with meaning and reading drills.";
   return {
     title,
     meta: buildMeta({ title, description, url }),

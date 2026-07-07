@@ -22,6 +22,16 @@ const SCRIPT_CARDS = [
     accent: "text-shu",
     ring: "hover:border-shu focus-visible:border-shu",
   },
+  {
+    href: "/kanji/",
+    en: "Kanji",
+    ja: "漢字",
+    glyph: "漢",
+    blurb:
+      "The first 80 kanji — meanings and readings, drilled through real words.",
+    accent: "text-matcha",
+    ring: "hover:border-matcha focus-visible:border-matcha",
+  },
 ] as const;
 
 const PRACTICE_MODES = [

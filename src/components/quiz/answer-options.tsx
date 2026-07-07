@@ -1,19 +1,27 @@
 import { component$, type QRL } from "@builder.io/qwik";
-import type { Question } from "~/lib/quiz";
+
+/** The slice of a question this grid needs — kana and kanji quizzes both fit. */
+interface AnswerableQuestion {
+  options: string[];
+  correctIndex: number;
+}
 
 interface AnswerOptionsProps {
-  question: Question;
+  question: AnswerableQuestion;
   /** Mixed into each option's key so buttons remount between questions. */
   questionIndex: number;
   selected: number | null;
   onAnswer$: QRL<(optionIndex: number) => void>;
+  /** "ja" when the options are Japanese text. */
+  lang?: string;
+  /** Typography for the option labels, e.g. "font-kana text-4xl". */
+  optionClass: string;
 }
 
 /** The multiple-choice grid, coloured to show correct/incorrect once answered. */
 export const AnswerOptions = component$<AnswerOptionsProps>(
-  ({ question, questionIndex, selected, onAnswer$ }) => {
+  ({ question, questionIndex, selected, onAnswer$, lang, optionClass }) => {
     const answered = selected !== null;
-    const optionsAreKana = question.kind !== "kana-to-romaji";
     return (
       <div
         class="mt-8 grid grid-cols-2 gap-3"
@@ -38,12 +46,8 @@ export const AnswerOptions = component$<AnswerOptionsProps>(
               type="button"
               disabled={answered}
               onClick$={() => onAnswer$(i)}
-              lang={optionsAreKana ? "ja" : undefined}
-              class={`relative min-h-20 rounded-2xl border-2 transition-colors ${cls} ${
-                optionsAreKana
-                  ? "font-kana text-4xl"
-                  : "font-display text-2xl font-semibold lowercase"
-              }`}
+              lang={lang}
+              class={`relative min-h-20 rounded-2xl border-2 px-2 transition-colors ${cls} ${optionClass}`}
             >
               {option}
               {answered && isCorrect && (

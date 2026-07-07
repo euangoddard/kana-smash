@@ -13,56 +13,49 @@ import {
 } from "@builder.io/qwik-city";
 import { AnswerOptions } from "~/components/quiz/answer-options";
 import { BackLink } from "~/components/back-link";
+import { KanjiQuizFeedback } from "~/components/quiz/kanji-quiz-feedback";
+import { KanjiQuizPrompt } from "~/components/quiz/kanji-quiz-prompt";
 import { MatchingExercise } from "~/components/quiz/matching-exercise";
 import { QuizEmpty } from "~/components/quiz/quiz-empty";
-import { QuizFeedback } from "~/components/quiz/quiz-feedback";
 import { QuizProgress } from "~/components/quiz/quiz-progress";
-import { QuizPrompt } from "~/components/quiz/quiz-prompt";
 import { QuizResults } from "~/components/quiz/quiz-results";
+import { KANJI_BY_ID, WORD_BY_ID } from "~/data/kanji";
 import {
-  displayKana,
-  isScript,
-  KANA_BY_ID,
-  SCRIPT_LABELS,
-  SCRIPTS,
-  type Script,
-} from "~/data/kana";
+  KANJI_LEVELS,
+  KANJI_LEVELS_BY_ID,
+  nextKanjiLevel,
+  WEAK_KANJI_LEVEL_ID,
+} from "~/data/kanji-levels";
 import {
-  LEVELS,
-  LEVELS_BY_ID,
-  nextLevel,
-  WEAK_AREAS_LEVEL_ID,
-} from "~/data/levels";
+  hasWeakKanjiData,
+  loadKanjiProgress,
+  recordKanjiAnswer,
+  weakKanji,
+} from "~/lib/kanji-progress";
 import {
-  hasWeakAreaData,
-  loadProgress,
-  recordAnswer,
-  weakKana,
-} from "~/lib/progress";
-import {
-  buildMatchSet,
-  DEFAULT_QUESTION_COUNT,
-  generateQuiz,
-  type Question,
-} from "~/lib/quiz";
-import { kanaSoundAvailable, playKanaSound } from "~/lib/audio";
+  buildKanjiMatchSet,
+  generateKanjiQuiz,
+  type KanjiExerciseKind,
+  type KanjiQuestion,
+} from "~/lib/kanji-quiz";
+import { DEFAULT_QUESTION_COUNT } from "~/lib/quiz";
+import type { MissedItem } from "~/components/quiz/quiz-results";
 import { playAnswerFeedback } from "~/lib/feedback";
 import { vibrateAnswerFeedback } from "~/lib/haptics";
 import { buildMeta } from "~/lib/seo";
 import { soundEnabled } from "~/lib/settings";
+import { findJapaneseVoice, speakJapanese } from "~/lib/speech";
 
 export const onGet: RequestHandler = ({ params, error }) => {
   const validLevel =
-    LEVELS_BY_ID.has(params.levelId) || params.levelId === WEAK_AREAS_LEVEL_ID;
-  if (!isScript(params.script) || !validLevel) throw error(404, "Not found");
+    KANJI_LEVELS_BY_ID.has(params.levelId) ||
+    params.levelId === WEAK_KANJI_LEVEL_ID;
+  if (!validLevel) throw error(404, "Not found");
 };
 
 export const onStaticGenerate: StaticGenerateHandler = () => ({
-  params: SCRIPTS.flatMap((script) =>
-    [...LEVELS.map((l) => l.id), WEAK_AREAS_LEVEL_ID].map((levelId) => ({
-      script,
-      levelId,
-    })),
+  params: [...KANJI_LEVELS.map((l) => l.id), WEAK_KANJI_LEVEL_ID].map(
+    (levelId) => ({ levelId }),
   ),
 });
 
@@ -70,17 +63,16 @@ type Phase = "loading" | "empty" | "question" | "matching" | "done";
 
 interface QuizState {
   phase: Phase;
-  questions: Question[];
+  questions: KanjiQuestion[];
   index: number;
   /** Index of the chosen option for the current question, null = unanswered. */
   selected: number | null;
   correctCount: number;
-  missedIds: string[];
-  poolIds: string[];
+  missed: MissedItem[];
   includeSound: boolean;
   /** True when listening questions were wanted but no Japanese voice exists. */
   soundMissing: boolean;
-  /** Kana for the closing matching round; unscored, so never sent to progress. */
+  /** Kanji for the closing matching round; unscored, so never sent to progress. */
   matchIds: string[];
   /** Wrong guesses in the matching round; null until that round finishes. */
   matchMistakes: number | null;
@@ -91,18 +83,26 @@ const WEAK_POOL_SIZE = 8;
 /** Below this a matching round isn't a real puzzle, so it's skipped. */
 const MIN_MATCH_PAIRS = 2;
 
-const KIND_PROMPTS = {
-  "kana-to-romaji": "What sound does this make?",
-  "romaji-to-kana": "Which character makes this sound?",
-  "sound-to-kana": "Listen — which character did you hear?",
-} as const;
+const KIND_PROMPTS: Record<KanjiExerciseKind, string> = {
+  "kanji-to-meaning": "What does this kanji mean?",
+  "meaning-to-kanji": "Which kanji means this?",
+  "word-to-reading": "How is this word read?",
+  "sound-to-word": "Listen — which word did you hear?",
+};
+
+/** Option typography per kind: kanji and readings big, English text smaller. */
+const OPTION_CLASSES: Record<KanjiExerciseKind, string> = {
+  "kanji-to-meaning": "font-display text-lg font-semibold",
+  "meaning-to-kanji": "font-kana text-4xl",
+  "word-to-reading": "font-kana text-2xl",
+  "sound-to-word": "font-kana text-3xl",
+};
 
 export default component$(() => {
   const loc = useLocation();
-  const script = loc.params.script as Script;
   const levelId = loc.params.levelId;
-  const isWeakAreas = levelId === WEAK_AREAS_LEVEL_ID;
-  const level = LEVELS_BY_ID.get(levelId);
+  const isWeakAreas = levelId === WEAK_KANJI_LEVEL_ID;
+  const level = KANJI_LEVELS_BY_ID.get(levelId);
   const levelTitle = isWeakAreas ? "Weak spots" : (level?.title ?? "");
 
   const state = useStore<QuizState>({
@@ -111,73 +111,62 @@ export default component$(() => {
     index: 0,
     selected: null,
     correctCount: 0,
-    missedIds: [],
-    poolIds: [],
+    missed: [],
     includeSound: false,
     soundMissing: false,
     matchIds: [],
     matchMistakes: null,
   });
 
-  // Read params fresh from `loc` rather than closing over the outer
-  // `script`/`level` consts: this function is invoked from a task$ effect,
-  // and Qwik only registers a task's callback once at mount, so a closure
-  // over those consts would keep replaying the level active when the quiz
-  // first mounted even after navigating to a different level.
+  // Read the param fresh from `loc` rather than closing over the outer
+  // consts — see the kana quiz page for why (task closures are registered
+  // once at mount and would go stale across same-route navigations).
   const buildPoolIds = $((): string[] => {
     const currentLevelId = loc.params.levelId;
-    if (currentLevelId !== WEAK_AREAS_LEVEL_ID) {
-      return LEVELS_BY_ID.get(currentLevelId)?.kanaIds ?? [];
+    if (currentLevelId !== WEAK_KANJI_LEVEL_ID) {
+      return KANJI_LEVELS_BY_ID.get(currentLevelId)?.kanjiIds ?? [];
     }
-    const currentScript = loc.params.script as Script;
-    const data = loadProgress();
-    if (!hasWeakAreaData(data, currentScript)) return [];
-    return weakKana(data, currentScript, WEAK_POOL_SIZE).map((k) => k.id);
+    const data = loadKanjiProgress();
+    if (!hasWeakKanjiData(data)) return [];
+    return weakKanji(data, WEAK_POOL_SIZE).map((k) => k.id);
   });
 
   const startQuiz = $(async () => {
-    const currentScript = loc.params.script as Script;
     const poolIds = await buildPoolIds();
     if (!poolIds.length) {
       state.phase = "empty";
       return;
     }
+    // Kanji words have no bundled recordings, so listening questions need a
+    // Japanese speech-synthesis voice on this device.
     const soundWanted = soundEnabled();
-    const includeSound =
-      soundWanted &&
-      (await Promise.all(poolIds.map(kanaSoundAvailable))).every(Boolean);
-    state.poolIds = poolIds;
+    const includeSound = soundWanted && (await findJapaneseVoice()) !== null;
     state.includeSound = includeSound;
     state.soundMissing = soundWanted && !includeSound;
-    const pool = poolIds.map((id) => KANA_BY_ID.get(id)!);
-    state.questions = generateQuiz(pool, currentScript, {
+    const pool = poolIds.map((id) => KANJI_BY_ID.get(id)!);
+    state.questions = generateKanjiQuiz(pool, {
       questionCount: DEFAULT_QUESTION_COUNT,
       includeSound,
     });
-    state.matchIds = buildMatchSet(pool).map((k) => k.id);
+    state.matchIds = buildKanjiMatchSet(pool).map((k) => k.id);
     state.matchMistakes = null;
     state.index = 0;
     state.selected = null;
     state.correctCount = 0;
-    state.missedIds = [];
+    state.missed = [];
     state.phase = "question";
   });
 
   // Reset synchronously on navigation to a new level so the stale "done"
   // screen doesn't flash while the new quiz builds client-side.
   useTask$(({ track }) => {
-    track(() => loc.params.script);
     track(() => loc.params.levelId);
     state.phase = "loading";
   });
 
   // Quiz content depends on localStorage + Math.random, so build client-side.
-  // Track the route params too: Qwik City's Link reuses this component
-  // instance across same-route navigations, so without a tracked dependency
-  // this task only fires once and never rebuilds the quiz for the new level.
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(({ track }) => {
-    track(() => loc.params.script);
     track(() => loc.params.levelId);
     void startQuiz();
   });
@@ -188,9 +177,8 @@ export default component$(() => {
     track(() => state.index);
     track(() => state.phase);
     const q = state.questions[state.index];
-    if (state.phase === "question" && q?.kind === "sound-to-kana") {
-      const kana = KANA_BY_ID.get(q.kanaId)!;
-      void playKanaSound(kana.id, displayKana(kana, script));
+    if (state.phase === "question" && q?.spoken) {
+      void speakJapanese(q.spoken);
     }
   });
 
@@ -199,9 +187,23 @@ export default component$(() => {
     const q = state.questions[state.index];
     const correct = optionIndex === q.correctIndex;
     state.selected = optionIndex;
-    if (correct) state.correctCount++;
-    else state.missedIds = [...new Set([...state.missedIds, q.kanaId])];
-    recordAnswer(script, q.kanaId, correct);
+    if (correct) {
+      state.correctCount++;
+    } else {
+      const kanji = KANJI_BY_ID.get(q.kanjiId)!;
+      const item: MissedItem =
+        q.facet === "meaning"
+          ? { id: q.kanjiId, glyph: kanji.id, hint: kanji.meaning }
+          : {
+              id: q.wordId!,
+              glyph: q.wordId!,
+              hint: WORD_BY_ID.get(q.wordId!)!.reading,
+            };
+      if (!state.missed.some((m) => m.id === item.id)) {
+        state.missed = [...state.missed, item];
+      }
+    }
+    recordKanjiAnswer(q.testedKanjiIds, q.facet, correct);
     playAnswerFeedback(correct);
     vibrateAnswerFeedback(correct);
     requestAnimationFrame(() =>
@@ -220,36 +222,32 @@ export default component$(() => {
   });
 
   // The matching round is a final check, not a scored question — it never
-  // calls recordAnswer, so it can't affect saved proficiency. The mistake
-  // count is kept only to show on the results screen.
+  // calls recordKanjiAnswer, so it can't affect saved proficiency.
   const finishMatching = $((mistakes: number) => {
     state.matchMistakes = mistakes;
     state.phase = "done";
   });
 
   const q = state.questions[state.index];
-  const kana = q ? KANA_BY_ID.get(q.kanaId)! : null;
   const answered = state.selected !== null;
   const wasCorrect = answered && q && state.selected === q.correctIndex;
 
   return (
     <>
       <nav class="flex items-center justify-between text-sm">
-        <BackLink href={`/${script}/`} class="rounded-lg py-2 pr-3">
+        <BackLink href="/kanji/" class="rounded-lg py-2 pr-3">
           Quit
         </BackLink>
-        <span class="text-ink-soft font-medium">
-          {SCRIPT_LABELS[script].en} · {levelTitle}
-        </span>
+        <span class="text-ink-soft font-medium">Kanji · {levelTitle}</span>
       </nav>
 
       {state.phase === "loading" && (
         <p class="text-ink-soft mt-16 text-center">Preparing your session…</p>
       )}
 
-      {state.phase === "empty" && <QuizEmpty script={script} />}
+      {state.phase === "empty" && <QuizEmpty script="kanji" />}
 
-      {state.phase === "question" && q && kana && (
+      {state.phase === "question" && q && (
         <div class="mt-4">
           <QuizProgress
             current={state.index}
@@ -259,8 +257,8 @@ export default component$(() => {
 
           {state.soundMissing && state.index === 0 && (
             <p class="bg-paper-deep text-ink-soft mt-4 rounded-xl px-4 py-3 text-sm">
-              No audio is available for these combination sounds on this device,
-              so listening questions are skipped this session.
+              No Japanese voice is available on this device, so listening
+              questions are skipped this session.
             </p>
           )}
 
@@ -268,9 +266,9 @@ export default component$(() => {
             {KIND_PROMPTS[q.kind]}
           </h1>
 
-          <QuizPrompt
+          <KanjiQuizPrompt
             question={q}
-            onReplay$={() => playKanaSound(kana.id, displayKana(kana, script))}
+            onReplay$={() => (q.spoken ? speakJapanese(q.spoken) : undefined)}
           />
 
           <AnswerOptions
@@ -278,20 +276,15 @@ export default component$(() => {
             questionIndex={state.index}
             selected={state.selected}
             onAnswer$={answer}
-            lang={q.kind !== "kana-to-romaji" ? "ja" : undefined}
-            optionClass={
-              q.kind !== "kana-to-romaji"
-                ? "font-kana text-4xl"
-                : "font-display text-2xl font-semibold lowercase"
-            }
+            lang={q.kind !== "kanji-to-meaning" ? "ja" : undefined}
+            optionClass={OPTION_CLASSES[q.kind]}
           />
 
           <div aria-live="polite" class="mt-6 min-h-24">
             {answered && (
-              <QuizFeedback
+              <KanjiQuizFeedback
                 correct={!!wasCorrect}
-                kana={kana}
-                script={script}
+                question={q}
                 isLastQuestion={state.index + 1 >= state.questions.length}
                 onNext$={next}
               />
@@ -304,20 +297,16 @@ export default component$(() => {
         <div class="mt-4">
           <p class="eyebrow text-center">Final round</p>
           <h1 class="font-display text-ink-soft mt-2 text-center text-lg font-semibold">
-            Match every character to its sound
+            Match every kanji to its meaning
           </h1>
           <MatchingExercise
             pairs={state.matchIds.map((id) => {
-              const kana = KANA_BY_ID.get(id)!;
-              return {
-                id,
-                left: displayKana(kana, script),
-                right: kana.romaji,
-              };
+              const kanji = KANJI_BY_ID.get(id)!;
+              return { id, left: kanji.id, right: kanji.meaning };
             })}
-            leftLabel="Characters"
-            rightLabel="Sounds"
-            rightClass="text-xl lowercase"
+            leftLabel="Kanji"
+            rightLabel="Meanings"
+            rightClass="text-base"
             onComplete$={finishMatching}
           />
         </div>
@@ -327,22 +316,15 @@ export default component$(() => {
         <QuizResults
           correctCount={state.correctCount}
           total={state.questions.length}
-          missed={state.missedIds.map((id) => {
-            const missed = KANA_BY_ID.get(id)!;
-            return {
-              id,
-              glyph: displayKana(missed, script),
-              hint: missed.romaji,
-            };
-          })}
+          missed={state.missed}
           onRetry$={startQuiz}
           nextHref={
-            isWeakAreas || !nextLevel(levelId)
+            isWeakAreas || !nextKanjiLevel(levelId)
               ? undefined
-              : `/${script}/quiz/${nextLevel(levelId)!.id}/`
+              : `/kanji/quiz/${nextKanjiLevel(levelId)!.id}/`
           }
-          nextTitle={isWeakAreas ? undefined : nextLevel(levelId)?.title}
-          levelsHref={`/${script}/`}
+          nextTitle={isWeakAreas ? undefined : nextKanjiLevel(levelId)?.title}
+          levelsHref="/kanji/"
           matchStats={
             state.matchMistakes !== null
               ? { pairs: state.matchIds.length, mistakes: state.matchMistakes }
@@ -355,14 +337,11 @@ export default component$(() => {
 });
 
 export const head: DocumentHead = ({ params, url }) => {
-  const level = LEVELS_BY_ID.get(params.levelId);
+  const level = KANJI_LEVELS_BY_ID.get(params.levelId);
   const levelTitle =
-    params.levelId === WEAK_AREAS_LEVEL_ID ? "Weak spots" : level?.title;
-  const script = isScript(params.script)
-    ? SCRIPT_LABELS[params.script].en
-    : "Kana";
-  const title = `${levelTitle ?? "Practice"} · ${script} — Kana Smash`;
-  const description = `Multiple-choice and listening drill for ${(levelTitle ?? "this level").toLowerCase()} in ${script}.`;
+    params.levelId === WEAK_KANJI_LEVEL_ID ? "Weak spots" : level?.title;
+  const title = `${levelTitle ?? "Practice"} · Kanji — Kana Smash`;
+  const description = `Meaning and reading drill for ${(levelTitle ?? "this level").toLowerCase()} in kanji.`;
   return {
     title,
     meta: buildMeta({ title, description, url }),
