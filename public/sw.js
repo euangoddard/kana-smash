@@ -144,3 +144,52 @@ self.addEventListener("fetch", (event) => {
     ),
   );
 });
+
+/* Practice reminders: the page registers a push subscription with the
+ * server (see src/lib/reminders.ts); a Cloudflare Worker cron job pushes
+ * { slot, title, body } payloads when a reminder is due. */
+
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  const { slot, title, body } = event.data.json();
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      tag: `kana-smash-${slot}`,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window" })
+      .then((windows) =>
+        windows.length > 0 ? windows[0].focus() : self.clients.openWindow("/"),
+      ),
+  );
+});
+
+/* Push services occasionally rotate subscriptions; resubscribe with the
+ * same options and tell the server which endpoint was replaced. */
+self.addEventListener("pushsubscriptionchange", (event) => {
+  const oldSubscription = event.oldSubscription;
+  if (!oldSubscription) return;
+  event.waitUntil(
+    self.registration.pushManager
+      .subscribe(oldSubscription.options)
+      .then((subscription) =>
+        fetch("/api/reminders", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            oldEndpoint: oldSubscription.endpoint,
+            subscription: subscription.toJSON(),
+          }),
+        }),
+      ),
+  );
+});

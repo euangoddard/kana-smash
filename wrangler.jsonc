@@ -1,0 +1,45 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kana-smash",
+  "main": "./dist/_worker.js",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "binding": "ASSET",
+    "directory": "./dist",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  /**
+   * Uncomment to route the production domain to this Worker (removes the
+   * domain from whatever currently serves it, so flip deliberately).
+   */
+  "routes": [{ "pattern": "kana-smash.euans.space", "custom_domain": true }],
+  /** Practice-reminder push notifications: scheduled handler cadence. */
+  "triggers": {
+    "crons": ["*/15 * * * *"],
+  },
+  /**
+   * VAPID public half + subject for Web Push. The private key is a secret:
+   * `wrangler secret put VAPID_PRIVATE_KEY` (locally: .dev.vars).
+   * The same public key is baked into the client via PUBLIC_VAPID_PUBLIC_KEY
+   * in .env — the two must stay in step.
+   */
+  "vars": {
+    "VAPID_PUBLIC_KEY": "BCocvoRfp8k9DUMEXFnWqJ0d2xfkd138R2FqsLJ1FYwdfLphnHavOOUA-Z5rvdcA7AOZhyu0-z-eu2jAvOKAZIw",
+    "VAPID_SUBJECT": "mailto:euan.goddard@gmail.com",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kana-smash",
+      "database_id": "4bfacb1d-aa88-44c7-842a-2390e7f00001",
+      "migrations_dir": "migrations",
+    },
+  ],
+}

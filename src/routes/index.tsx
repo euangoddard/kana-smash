@@ -1,5 +1,6 @@
 import { component$ } from "@builder.io/qwik";
 import { Link, type DocumentHead } from "@builder.io/qwik-city";
+import { PracticeReminders } from "~/components/practice-reminders";
 import { buildMeta } from "~/lib/seo";
 
 const SCRIPT_CARDS = [
@@ -118,6 +119,8 @@ export default component$(() => {
           See my progress
         </Link>
       </section>
+
+      <PracticeReminders />
     </>
   );
 });

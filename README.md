@@ -45,11 +45,41 @@ src/
 
 ```shell
 npm start           # dev server
-npm run build       # production build (static, dist/)
+npm run build       # production build (client + worker)
+npm run serve       # build + run the worker locally (wrangler dev)
 npm run preview     # build + local preview
 npm run lint        # eslint
 npm run build.types # typecheck
 ```
 
-The production build is fully static (SSG via the static adapter in
-`adapters/static/`) — deploy `dist/` to any static host.
+## Deployment (Cloudflare Workers)
+
+The app deploys as a Cloudflare Worker (adapter in
+`adapters/cloudflare-workers/`): static assets are served from `dist/`,
+pages are server-rendered, and a cron trigger sends practice-reminder
+push notifications (see `wrangler.jsonc`).
+
+```shell
+npm run deploy      # build + wrangler deploy
+```
+
+### Practice reminders
+
+Reminders are Web Push notifications. The pieces:
+
+- `src/components/practice-reminders.tsx` — settings UI (installed PWA only)
+- `src/lib/reminders.ts` — push subscription + `/api/reminders` client
+- `src/routes/api/reminders/index.ts` — subscription CRUD, backed by D1
+- `src/lib/server/push-sender.ts` — cron-driven sender (every 15 min)
+- `public/sw.js` — shows the pushed notification
+
+One-time setup on a new environment:
+
+```shell
+npx wrangler d1 create kana-smash          # then update database_id in wrangler.jsonc
+npx wrangler d1 migrations apply kana-smash --remote
+npx web-push generate-vapid-keys           # then update the TWO public-key copies:
+                                           #   wrangler.jsonc vars.VAPID_PUBLIC_KEY
+                                           #   src/lib/reminders.ts VAPID_PUBLIC_KEY
+npx wrangler secret put VAPID_PRIVATE_KEY  # private half; locally: .dev.vars
+```
