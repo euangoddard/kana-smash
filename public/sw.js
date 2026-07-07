@@ -2,7 +2,7 @@
  * Hashed build assets are cached forever (cache-first); pages are
  * network-first with a cache fallback so content updates when online. */
 
-const CACHE = "kana-smash-v2";
+const CACHE = "kana-smash-v3";
 const KANA_AUDIO_FILES = [
   "a",
   "i",
@@ -78,6 +78,8 @@ const SHELL = [
   "/",
   "/manifest.json",
   "/fonts/bricolage-grotesque.woff2",
+  "/icons/icon-192.png",
+  "/icons/badge-96.png",
   ...KANA_AUDIO_FILES.flatMap((name) => [
     `/audio/${name}.mp3`,
     `/audio/${name}.ogg`,
@@ -157,7 +159,7 @@ self.addEventListener("push", (event) => {
       body,
       tag: `kana-smash-${slot}`,
       icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
+      badge: "/icons/badge-96.png",
     }),
   );
 });
