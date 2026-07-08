@@ -13,6 +13,7 @@ import {
 } from "@builder.io/qwik-city";
 import { AnswerOptions } from "~/components/quiz/answer-options";
 import { BackLink } from "~/components/back-link";
+import { CharacterIntro } from "~/components/quiz/character-intro";
 import { KanjiQuizFeedback } from "~/components/quiz/kanji-quiz-feedback";
 import { KanjiQuizPrompt } from "~/components/quiz/kanji-quiz-prompt";
 import { MatchingExercise } from "~/components/quiz/matching-exercise";
@@ -26,6 +27,7 @@ import {
   nextKanjiLevel,
   WEAK_KANJI_LEVEL_ID,
 } from "~/data/kanji-levels";
+import { hasSeenIntro, markIntroSeen } from "~/lib/introductions";
 import {
   hasWeakKanjiData,
   loadKanjiProgress,
@@ -59,10 +61,14 @@ export const onStaticGenerate: StaticGenerateHandler = () => ({
   ),
 });
 
-type Phase = "loading" | "empty" | "question" | "matching" | "done";
+type Phase = "loading" | "empty" | "intro" | "question" | "matching" | "done";
 
 interface QuizState {
   phase: Phase;
+  /** True when the intro was requested as a recap rather than auto-shown. */
+  introRecap: boolean;
+  /** Kanji in this session's pool, for the introduction screen. */
+  poolIds: string[];
   questions: KanjiQuestion[];
   index: number;
   /** Index of the chosen option for the current question, null = unanswered. */
@@ -107,6 +113,8 @@ export default component$(() => {
 
   const state = useStore<QuizState>({
     phase: "loading",
+    introRecap: false,
+    poolIds: [],
     questions: [],
     index: 0,
     selected: null,
@@ -141,6 +149,7 @@ export default component$(() => {
     // Japanese speech-synthesis voice on this device.
     const soundWanted = soundEnabled();
     const includeSound = soundWanted && (await findJapaneseVoice()) !== null;
+    state.poolIds = poolIds;
     state.includeSound = includeSound;
     state.soundMissing = soundWanted && !includeSound;
     const pool = poolIds.map((id) => KANJI_BY_ID.get(id)!);
@@ -154,7 +163,15 @@ export default component$(() => {
     state.selected = null;
     state.correctCount = 0;
     state.missed = [];
-    state.phase = "question";
+    // First time on a regular level, open with the kanji introduction
+    // (weak-spot sessions reuse known kanji, so nothing is "new" there).
+    const currentLevelId = loc.params.levelId;
+    const firstVisit =
+      currentLevelId !== WEAK_KANJI_LEVEL_ID &&
+      !hasSeenIntro("kanji", currentLevelId);
+    if (firstVisit) markIntroSeen("kanji", currentLevelId);
+    state.introRecap = !firstVisit;
+    state.phase = firstVisit ? "intro" : "question";
   });
 
   // Reset synchronously on navigation to a new level so the stale "done"
@@ -180,6 +197,15 @@ export default component$(() => {
     if (state.phase === "question" && q?.spoken) {
       void speakJapanese(q.spoken);
     }
+  });
+
+  const beginQuestions = $(() => {
+    state.phase = "question";
+  });
+
+  const showRecap = $(() => {
+    state.introRecap = true;
+    state.phase = "intro";
   });
 
   const answer = $((optionIndex: number) => {
@@ -247,6 +273,25 @@ export default component$(() => {
 
       {state.phase === "empty" && <QuizEmpty script="kanji" />}
 
+      {state.phase === "intro" && (
+        <CharacterIntro
+          items={state.poolIds.map((id) => {
+            const kanji = KANJI_BY_ID.get(id)!;
+            const readings = [...kanji.on, ...kanji.kun].join(" · ");
+            return {
+              id,
+              glyph: kanji.id,
+              name: kanji.meaning,
+              detail: readings || undefined,
+            };
+          })}
+          recap={state.introRecap}
+          gridClass="grid-cols-2 sm:grid-cols-3"
+          detailLang="ja"
+          onStart$={beginQuestions}
+        />
+      )}
+
       {state.phase === "question" && q && (
         <div class="mt-4">
           <QuizProgress
@@ -254,6 +299,18 @@ export default component$(() => {
             total={state.questions.length}
             answered={answered}
           />
+
+          {state.index === 0 && !answered && (
+            <p class="mt-3 text-center">
+              <button
+                type="button"
+                onClick$={showRecap}
+                class="text-ink-soft text-sm underline decoration-dotted underline-offset-4"
+              >
+                Recap these kanji first
+              </button>
+            </p>
+          )}
 
           {state.soundMissing && state.index === 0 && (
             <p class="bg-paper-deep text-ink-soft mt-4 rounded-xl px-4 py-3 text-sm">

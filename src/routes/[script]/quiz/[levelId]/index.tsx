@@ -13,6 +13,7 @@ import {
 } from "@builder.io/qwik-city";
 import { AnswerOptions } from "~/components/quiz/answer-options";
 import { BackLink } from "~/components/back-link";
+import { CharacterIntro } from "~/components/quiz/character-intro";
 import { MatchingExercise } from "~/components/quiz/matching-exercise";
 import { QuizEmpty } from "~/components/quiz/quiz-empty";
 import { QuizFeedback } from "~/components/quiz/quiz-feedback";
@@ -33,6 +34,7 @@ import {
   nextLevel,
   WEAK_AREAS_LEVEL_ID,
 } from "~/data/levels";
+import { hasSeenIntro, markIntroSeen } from "~/lib/introductions";
 import {
   hasWeakAreaData,
   loadProgress,
@@ -66,10 +68,12 @@ export const onStaticGenerate: StaticGenerateHandler = () => ({
   ),
 });
 
-type Phase = "loading" | "empty" | "question" | "matching" | "done";
+type Phase = "loading" | "empty" | "intro" | "question" | "matching" | "done";
 
 interface QuizState {
   phase: Phase;
+  /** True when the intro was requested as a recap rather than auto-shown. */
+  introRecap: boolean;
   questions: Question[];
   index: number;
   /** Index of the chosen option for the current question, null = unanswered. */
@@ -107,6 +111,7 @@ export default component$(() => {
 
   const state = useStore<QuizState>({
     phase: "loading",
+    introRecap: false,
     questions: [],
     index: 0,
     selected: null,
@@ -160,7 +165,15 @@ export default component$(() => {
     state.selected = null;
     state.correctCount = 0;
     state.missedIds = [];
-    state.phase = "question";
+    // First time on a regular level, open with the character introduction
+    // (weak-spot sessions reuse known characters, so nothing is "new" there).
+    const currentLevelId = loc.params.levelId;
+    const firstVisit =
+      currentLevelId !== WEAK_AREAS_LEVEL_ID &&
+      !hasSeenIntro(currentScript, currentLevelId);
+    if (firstVisit) markIntroSeen(currentScript, currentLevelId);
+    state.introRecap = !firstVisit;
+    state.phase = firstVisit ? "intro" : "question";
   });
 
   // Reset synchronously on navigation to a new level so the stale "done"
@@ -192,6 +205,20 @@ export default component$(() => {
       const kana = KANA_BY_ID.get(q.kanaId)!;
       void playKanaSound(kana.id, displayKana(kana, script));
     }
+  });
+
+  const beginQuestions = $(() => {
+    state.phase = "question";
+  });
+
+  const showRecap = $(() => {
+    state.introRecap = true;
+    state.phase = "intro";
+  });
+
+  const hearKana = $((id: string) => {
+    const heard = KANA_BY_ID.get(id)!;
+    void playKanaSound(heard.id, displayKana(heard, script));
   });
 
   const answer = $((optionIndex: number) => {
@@ -249,6 +276,23 @@ export default component$(() => {
 
       {state.phase === "empty" && <QuizEmpty script={script} />}
 
+      {state.phase === "intro" && (
+        <CharacterIntro
+          items={state.poolIds.map((id) => {
+            const item = KANA_BY_ID.get(id)!;
+            return {
+              id,
+              glyph: displayKana(item, script),
+              name: item.romaji,
+              detail: item.altRomaji ? `also "${item.altRomaji}"` : undefined,
+            };
+          })}
+          recap={state.introRecap}
+          onStart$={beginQuestions}
+          onHear$={state.includeSound ? hearKana : undefined}
+        />
+      )}
+
       {state.phase === "question" && q && kana && (
         <div class="mt-4">
           <QuizProgress
@@ -256,6 +300,18 @@ export default component$(() => {
             total={state.questions.length}
             answered={answered}
           />
+
+          {state.index === 0 && !answered && (
+            <p class="mt-3 text-center">
+              <button
+                type="button"
+                onClick$={showRecap}
+                class="text-ink-soft text-sm underline decoration-dotted underline-offset-4"
+              >
+                Recap these characters first
+              </button>
+            </p>
+          )}
 
           {state.soundMissing && state.index === 0 && (
             <p class="bg-paper-deep text-ink-soft mt-4 rounded-xl px-4 py-3 text-sm">
