@@ -382,6 +382,7 @@ export default component$(() => {
           }
           nextTitle={isWeakAreas ? undefined : nextKanjiLevel(levelId)?.title}
           levelsHref="/kanji/"
+          progressHref="/progress/?script=kanji"
           matchStats={
             state.matchMistakes !== null
               ? { pairs: state.matchIds.length, mistakes: state.matchMistakes }

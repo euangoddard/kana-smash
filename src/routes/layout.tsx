@@ -1,7 +1,15 @@
 import { component$, Slot } from "@builder.io/qwik";
-import { Link } from "@builder.io/qwik-city";
+import { Link, useLocation } from "@builder.io/qwik-city";
+import { isScript } from "~/data/kana";
 
 export default component$(() => {
+  const loc = useLocation();
+  // Keep the progress page on the script the visitor is practising.
+  const section = loc.url.pathname.split("/")[1] ?? "";
+  const progressHref =
+    isScript(section) || section === "kanji"
+      ? `/progress/?script=${section}`
+      : "/progress/";
   return (
     <div class="flex min-h-dvh flex-col">
       <a
@@ -37,7 +45,7 @@ export default component$(() => {
           </Link>
           <nav aria-label="Main">
             <Link
-              href="/progress/"
+              href={progressHref}
               class="text-indigo-ai rounded-lg px-3 py-2 text-sm font-medium underline-offset-4 hover:underline"
             >
               My progress

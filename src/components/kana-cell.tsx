@@ -6,7 +6,7 @@ export interface CellStat {
   attempts: number;
 }
 
-const cellStyle = (stat: CellStat | undefined): string => {
+export const cellStyle = (stat: CellStat | undefined): string => {
   if (!stat || stat.score === null) return "bg-paper-deep/60 text-ink-faint";
   if (stat.score < 0.5) return "bg-heat-low/80 text-ink";
   if (stat.score < 0.75) return "bg-heat-mid/80 text-ink";

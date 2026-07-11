@@ -399,6 +399,7 @@ export default component$(() => {
           }
           nextTitle={isWeakAreas ? undefined : nextLevel(levelId)?.title}
           levelsHref={`/${script}/`}
+          progressHref={`/progress/?script=${script}`}
           matchStats={
             state.matchMistakes !== null
               ? { pairs: state.matchIds.length, mistakes: state.matchMistakes }

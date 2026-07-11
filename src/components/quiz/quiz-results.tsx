@@ -21,6 +21,8 @@ interface QuizResultsProps {
   nextHref?: string;
   nextTitle?: string;
   levelsHref: string;
+  /** Progress page link — pass a ?script= variant to open the right tab. */
+  progressHref?: string;
   /** Final matching-round tally — informational only, not part of the score. */
   matchStats?: MatchStats;
 }
@@ -35,6 +37,7 @@ export const QuizResults = component$<QuizResultsProps>(
     nextHref,
     nextTitle,
     levelsHref,
+    progressHref = "/progress/",
     matchStats,
   }) => (
     <div class="mt-10 text-center" aria-live="polite">
@@ -94,7 +97,7 @@ export const QuizResults = component$<QuizResultsProps>(
         <Link href={levelsHref} class="btn-outline">
           All levels
         </Link>
-        <Link href="/progress/" class="btn-outline">
+        <Link href={progressHref} class="btn-outline">
           My progress
         </Link>
       </div>

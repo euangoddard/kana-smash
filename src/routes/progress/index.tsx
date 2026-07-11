@@ -4,25 +4,29 @@ import {
   useStore,
   useVisibleTask$,
 } from "@builder.io/qwik";
-import { Link, type DocumentHead } from "@builder.io/qwik-city";
+import { Link, useLocation, type DocumentHead } from "@builder.io/qwik-city";
 import { buildMeta } from "~/lib/seo";
 import { BackLink } from "~/components/back-link";
 import { KanaCell, type CellStat } from "~/components/kana-cell";
 import { kanaAt, KanaGridSection } from "~/components/kana-grid-section";
+import { KanjiGridSection } from "~/components/kanji-grid-section";
 import {
   ALL_KANA,
   displayKana,
+  isScript,
   SCRIPT_LABELS,
   SCRIPTS,
   type Script,
 } from "~/data/kana";
+import { ALL_KANJI } from "~/data/kanji";
+import { KANJI_LEVELS, WEAK_KANJI_LEVEL_ID } from "~/data/kanji-levels";
 import { WEAK_AREAS_LEVEL_ID } from "~/data/levels";
+import { kanjiStats, loadKanjiProgress } from "~/lib/kanji-progress";
 import {
   loadProgress,
   scriptStats,
   WEAK_THRESHOLD,
   MIN_ATTEMPTS,
-  type KanaStat,
 } from "~/lib/progress";
 
 const BASIC_ROWS = ["vowel", "k", "s", "t", "n", "h", "m", "y", "r", "w"];
@@ -49,17 +53,49 @@ const LEGEND = [
   { label: "Solid", class: "bg-matcha" },
 ];
 
+/** The progress page covers kanji too, which isn't a `Script`. */
+type Tab = Script | "kanji";
+const TABS: Tab[] = [...SCRIPTS, "kanji"];
+const isTab = (value: string): value is Tab =>
+  isScript(value) || value === "kanji";
+const tabLabel = (tab: Tab): string =>
+  tab === "kanji" ? "Kanji" : SCRIPT_LABELS[tab].en;
+
+/** Levels that partition the kanji set — checkpoints and review repeat them. */
+const KANJI_GROUPS = KANJI_LEVELS.filter(
+  (l) => l.section !== "review" && !l.id.startsWith("checkpoint-"),
+);
+
+/** One weak-spot chip, display-ready for either kana or kanji. */
+interface WeakSpot {
+  id: string;
+  glyph: string;
+  hint: string;
+  score: number | null;
+  attempts: number;
+}
+
 export default component$(() => {
-  const activeScript = useSignal<Script>("hiragana");
-  const stats = useStore<Record<Script, Record<string, CellStat>>>({
+  const loc = useLocation();
+  const requested = loc.url.searchParams.get("script");
+  const activeTab = useSignal<Tab>(
+    requested && isTab(requested) ? requested : "hiragana",
+  );
+  const stats = useStore<Record<Tab, Record<string, CellStat>>>({
     hiragana: {},
     katakana: {},
+    kanji: {},
   });
   const loaded = useSignal(false);
 
   // Progress lives in localStorage — client-only.
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(() => {
+    // On a hard load of this static page the ?script= param isn't in the
+    // prerendered state, so re-read it from the browser URL.
+    const param = new URLSearchParams(window.location.search).get("script");
+    if (param && isTab(param)) activeTab.value = param;
+
     const data = loadProgress();
     for (const script of SCRIPTS) {
       for (const stat of scriptStats(data, script)) {
@@ -69,26 +105,48 @@ export default component$(() => {
         };
       }
     }
+    for (const stat of kanjiStats(loadKanjiProgress())) {
+      stats.kanji[stat.kanji.id] = {
+        score: stat.score,
+        attempts: stat.attempts,
+      };
+    }
     loaded.value = true;
   });
 
-  const script = activeScript.value;
-  const current = stats[script];
+  const tab = activeTab.value;
+  const current = stats[tab];
   const attemptedCount = Object.values(current).filter(
     (s) => s.attempts > 0,
   ).length;
-  const weakest: KanaStat[] = ALL_KANA.map((kana) => ({
-    kana,
-    ...(current[kana.id] ?? { score: null, attempts: 0 }),
-  }))
+  const candidates: WeakSpot[] =
+    tab === "kanji"
+      ? ALL_KANJI.map((kanji) => ({
+          id: kanji.id,
+          glyph: kanji.id,
+          hint: kanji.meaning,
+          ...(current[kanji.id] ?? { score: null, attempts: 0 }),
+        }))
+      : ALL_KANA.map((kana) => ({
+          id: kana.id,
+          glyph: displayKana(kana, tab),
+          hint: kana.romaji,
+          ...(current[kana.id] ?? { score: null, attempts: 0 }),
+        }));
+  const weakest = candidates
     .filter(
-      (s): s is KanaStat & { score: number } =>
+      (s): s is WeakSpot & { score: number } =>
         s.score !== null &&
         s.attempts >= MIN_ATTEMPTS &&
         s.score < WEAK_THRESHOLD,
     )
     .sort((a, b) => a.score - b.score)
     .slice(0, 6);
+  const sectionHref = tab === "kanji" ? "/kanji/" : `/${tab}/`;
+  const drillHref =
+    tab === "kanji"
+      ? `/kanji/quiz/${WEAK_KANJI_LEVEL_ID}/`
+      : `/${tab}/quiz/${WEAK_AREAS_LEVEL_ID}/`;
 
   return (
     <>
@@ -102,26 +160,28 @@ export default component$(() => {
       <p class="text-ink-soft mt-2 max-w-md text-sm">
         Recent answers count more than old ones, so this map shows how you’re
         doing <em>now</em> — not a lifetime average.
+        {tab === "kanji" &&
+          " Each kanji is coloured by its weaker skill — meaning or reading."}
       </p>
 
       <div
         role="group"
         aria-label="Script"
-        class="bg-paper-deep mt-6 grid grid-cols-2 gap-1 rounded-xl p-1"
+        class="bg-paper-deep mt-6 grid grid-cols-3 gap-1 rounded-xl p-1"
       >
-        {SCRIPTS.map((s) => (
+        {TABS.map((t) => (
           <button
-            key={s}
+            key={t}
             type="button"
-            aria-pressed={activeScript.value === s}
-            onClick$={() => (activeScript.value = s)}
+            aria-pressed={activeTab.value === t}
+            onClick$={() => (activeTab.value = t)}
             class={`min-h-11 rounded-lg text-sm font-semibold transition-colors ${
-              activeScript.value === s
+              activeTab.value === t
                 ? "bg-indigo-ai text-paper"
                 : "text-ink-soft hover:text-ink"
             }`}
           >
-            {SCRIPT_LABELS[s].en}
+            {tabLabel(t)}
           </button>
         ))}
       </div>
@@ -129,14 +189,14 @@ export default component$(() => {
       {loaded.value && attemptedCount === 0 && (
         <div class="dashed-panel mt-8 p-6 text-center">
           <p class="font-display text-lg font-bold">
-            No {SCRIPT_LABELS[script].en.toLowerCase()} answers yet.
+            No {tabLabel(tab).toLowerCase()} answers yet.
           </p>
           <p class="text-ink-soft mx-auto mt-2 max-w-sm text-sm">
             This page fills in as you practise — every answer colours the map
             below.
           </p>
           <Link
-            href={`/${script}/`}
+            href={sectionHref}
             class="btn-primary mt-5 inline-block px-5 py-3"
           >
             Start practising
@@ -152,18 +212,18 @@ export default component$(() => {
           <h2 class="font-display text-lg font-bold">Current weak spots</h2>
           <ul class="mt-3 flex flex-wrap gap-2">
             {weakest.map((s) => (
-              <li key={s.kana.id} class="chip bg-paper text-shu-deep">
+              <li key={s.id} class="chip bg-paper text-shu-deep">
                 <span lang="ja" class="font-kana text-xl">
-                  {displayKana(s.kana, script)}
+                  {s.glyph}
                 </span>{" "}
                 <span class="text-sm">
-                  {s.kana.romaji} · {Math.round((s.score ?? 0) * 100)}%
+                  {s.hint} · {Math.round(s.score * 100)}%
                 </span>
               </li>
             ))}
           </ul>
           <Link
-            href={`/${script}/quiz/${WEAK_AREAS_LEVEL_ID}/`}
+            href={drillHref}
             class="bg-shu text-paper hover:bg-shu-deep mt-4 inline-block rounded-xl px-5 py-3 font-semibold transition-colors"
           >
             Drill these now
@@ -183,46 +243,60 @@ export default component$(() => {
         ))}
       </div>
 
-      <KanaGridSection
-        title="Basics"
-        rows={BASIC_ROWS}
-        vowels={["a", "i", "u", "e", "o"]}
-        script={script}
-        stats={current}
-      />
+      {tab === "kanji" ? (
+        KANJI_GROUPS.map((group) => (
+          <KanjiGridSection
+            key={group.id}
+            title={group.title}
+            kanjiIds={group.kanjiIds}
+            stats={current}
+          />
+        ))
+      ) : (
+        <>
+          <KanaGridSection
+            title="Basics"
+            rows={BASIC_ROWS}
+            vowels={["a", "i", "u", "e", "o"]}
+            script={tab}
+            stats={current}
+          />
 
-      <section class="mt-4" aria-label="n accuracy">
-        <ul class="grid grid-cols-5 gap-1.5">
-          {(() => {
-            const kana = kanaAt("w", "n")!;
-            return (
-              <KanaCell kana={kana} script={script} stat={current[kana.id]} />
-            );
-          })()}
-        </ul>
-      </section>
+          <section class="mt-4" aria-label="n accuracy">
+            <ul class="grid grid-cols-5 gap-1.5">
+              {(() => {
+                const kana = kanaAt("w", "n")!;
+                return (
+                  <KanaCell kana={kana} script={tab} stat={current[kana.id]} />
+                );
+              })()}
+            </ul>
+          </section>
 
-      <KanaGridSection
-        title="Dakuten & handakuten"
-        rows={DAKUTEN_ROWS}
-        vowels={["a", "i", "u", "e", "o"]}
-        script={script}
-        stats={current}
-      />
-      <KanaGridSection
-        title="Combination kana"
-        rows={YOON_ROWS}
-        vowels={["a", "u", "o"]}
-        script={script}
-        stats={current}
-      />
+          <KanaGridSection
+            title="Dakuten & handakuten"
+            rows={DAKUTEN_ROWS}
+            vowels={["a", "i", "u", "e", "o"]}
+            script={tab}
+            stats={current}
+          />
+          <KanaGridSection
+            title="Combination kana"
+            rows={YOON_ROWS}
+            vowels={["a", "u", "o"]}
+            script={tab}
+            stats={current}
+          />
+        </>
+      )}
     </>
   );
 });
 
 export const head: DocumentHead = ({ url }) => {
   const title = "My progress — Kana Smash";
-  const description = "A heatmap of your hiragana and katakana accuracy.";
+  const description =
+    "A heatmap of your hiragana, katakana and kanji accuracy.";
   return {
     title,
     meta: buildMeta({ title, description, url }),
