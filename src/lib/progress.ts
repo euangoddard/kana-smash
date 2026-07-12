@@ -85,8 +85,13 @@ export const scriptStats = (data: ProgressData, script: Script): KanaStat[] =>
 /** Below this recency-weighted accuracy a kana counts as weak. */
 export const WEAK_THRESHOLD = 0.8;
 
-/** Attempts needed before a kana can be judged weak (or mastered). */
-export const MIN_ATTEMPTS = 2;
+/**
+ * Attempts needed before a kana can be judged weak (or mastered). Must stay
+ * at 1 so this agrees with the heatmap, which flags "needs work" from the
+ * first wrong answer — large pools (e.g. yōon levels) often leave a kana
+ * with a single attempt per session.
+ */
+export const MIN_ATTEMPTS = 1;
 
 /**
  * Weakest kana first. Only kana with enough attempts qualify; caller decides
