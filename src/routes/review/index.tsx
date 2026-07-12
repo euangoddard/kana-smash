@@ -33,13 +33,13 @@ export default component$(() => {
     const kanaData = loadProgress();
     courses.list = [
       ...SCRIPTS.map((script) => ({
-        href: `/${script}/quiz/${DUE_REVIEW_LEVEL_ID}/`,
+        href: `/${script}/quiz/${DUE_REVIEW_LEVEL_ID}/?from=review`,
         label: SCRIPT_LABELS[script].en,
         ja: SCRIPT_LABELS[script].ja,
         due: dueKana(kanaData, script).length,
       })),
       {
-        href: `/kanji/quiz/${DUE_KANJI_REVIEW_LEVEL_ID}/`,
+        href: `/kanji/quiz/${DUE_KANJI_REVIEW_LEVEL_ID}/?from=review`,
         label: "Kanji",
         ja: "漢字",
         due: dueKanji(loadKanjiProgress()).length,

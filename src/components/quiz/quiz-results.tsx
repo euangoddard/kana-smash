@@ -21,7 +21,10 @@ interface QuizResultsProps {
   onRetry$: QRL<() => void>;
   nextHref?: string;
   nextTitle?: string;
+  /** Where the "back" action leads — the level list, or wherever the
+   * session was started from (review hub, progress page). */
   levelsHref: string;
+  levelsLabel?: string;
   /** Progress page link — pass a ?script= variant to open the right tab. */
   progressHref?: string;
   /** Final matching-round tally — informational only, not part of the score. */
@@ -38,6 +41,7 @@ export const QuizResults = component$<QuizResultsProps>(
     nextHref,
     nextTitle,
     levelsHref,
+    levelsLabel = "All levels",
     progressHref = "/progress/",
     matchStats,
   }) => (
@@ -97,11 +101,13 @@ export const QuizResults = component$<QuizResultsProps>(
           Go again
         </button>
         <Link href={levelsHref} class="btn-outline">
-          All levels
+          {levelsLabel}
         </Link>
-        <Link href={progressHref} class="btn-outline">
-          My progress
-        </Link>
+        {progressHref !== levelsHref && (
+          <Link href={progressHref} class="btn-outline">
+            My progress
+          </Link>
+        )}
       </div>
     </div>
   ),

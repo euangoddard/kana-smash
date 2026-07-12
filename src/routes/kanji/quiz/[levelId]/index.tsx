@@ -30,6 +30,7 @@ import {
 } from "~/data/kanji-levels";
 import { dueKanji, REVIEW_POOL_SIZE } from "~/lib/srs";
 import { hasSeenIntro, markIntroSeen } from "~/lib/introductions";
+import { returnTargetFromLocation, type ReturnTarget } from "~/lib/return-to";
 import {
   hasWeakKanjiData,
   loadKanjiProgress,
@@ -87,6 +88,9 @@ interface QuizState {
   matchIds: string[];
   /** Wrong guesses in the matching round; null until that round finishes. */
   matchMistakes: number | null;
+  /** Where Quit and the results actions lead when the session was entered
+   * from somewhere other than the level list (review hub, progress page). */
+  returnTo: ReturnTarget | null;
 }
 
 const WEAK_POOL_SIZE = 8;
@@ -136,6 +140,7 @@ export default component$(() => {
     soundMissing: false,
     matchIds: [],
     matchMistakes: null,
+    returnTo: null,
   });
 
   // Read the param fresh from `loc` rather than closing over the outer
@@ -204,6 +209,7 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(({ track }) => {
     track(() => loc.params.levelId);
+    state.returnTo = returnTargetFromLocation("kanji");
     void startQuiz();
   });
 
@@ -280,7 +286,10 @@ export default component$(() => {
   return (
     <>
       <nav class="flex items-center justify-between text-sm">
-        <BackLink href="/kanji/" class="rounded-lg py-2 pr-3">
+        <BackLink
+          href={state.returnTo?.href ?? "/kanji/"}
+          class="rounded-lg py-2 pr-3"
+        >
           Quit
         </BackLink>
         <span class="text-ink-soft font-medium">Kanji · {levelTitle}</span>
@@ -296,6 +305,8 @@ export default component$(() => {
             script="kanji"
             title="All caught up!"
             body="Nothing is due for review right now. Practise a level to add kanji to the rotation, or come back later."
+            href="/review/"
+            cta="Back to review"
           />
         ) : (
           <QuizEmpty script="kanji" />
@@ -413,7 +424,8 @@ export default component$(() => {
               ? undefined
               : nextKanjiLevel(levelId)?.title
           }
-          levelsHref="/kanji/"
+          levelsHref={state.returnTo?.href ?? "/kanji/"}
+          levelsLabel={state.returnTo?.label}
           progressHref="/progress/?script=kanji"
           matchStats={
             state.matchMistakes !== null

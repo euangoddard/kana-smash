@@ -31,6 +31,7 @@ import { vibrateAnswerFeedback } from "~/lib/haptics";
 import { hasSeenIntro, markIntroSeen } from "~/lib/introductions";
 import { recordWordAnswer } from "~/lib/progress";
 import { DEFAULT_QUESTION_COUNT } from "~/lib/quiz";
+import { returnTargetFromLocation, type ReturnTarget } from "~/lib/return-to";
 import { buildMeta } from "~/lib/seo";
 import { soundEnabled } from "~/lib/settings";
 import { findJapaneseVoice, speakJapanese } from "~/lib/speech";
@@ -77,6 +78,9 @@ interface QuizState {
   matchIds: string[];
   /** Wrong guesses in the matching round; null until that round finishes. */
   matchMistakes: number | null;
+  /** Where Quit and the results actions lead when the session was entered
+   * from somewhere other than the level list. */
+  returnTo: ReturnTarget | null;
 }
 
 /** Below this a matching round isn't a real puzzle, so it's skipped. */
@@ -108,6 +112,7 @@ export default component$(() => {
     soundMissing: false,
     matchIds: [],
     matchMistakes: null,
+    returnTo: null,
   });
 
   const startQuiz = $(async () => {
@@ -157,6 +162,7 @@ export default component$(() => {
   useVisibleTask$(({ track }) => {
     track(() => loc.params.script);
     track(() => loc.params.levelId);
+    state.returnTo = returnTargetFromLocation(loc.params.script);
     void startQuiz();
   });
 
@@ -225,7 +231,10 @@ export default component$(() => {
   return (
     <>
       <nav class="flex items-center justify-between text-sm">
-        <BackLink href={`/${script}/`} class="rounded-lg py-2 pr-3">
+        <BackLink
+          href={state.returnTo?.href ?? `/${script}/`}
+          class="rounded-lg py-2 pr-3"
+        >
           Quit
         </BackLink>
         <span class="text-ink-soft font-medium">
@@ -349,7 +358,8 @@ export default component$(() => {
             following ? `/${script}/words/quiz/${following.id}/` : undefined
           }
           nextTitle={following?.title}
-          levelsHref={`/${script}/`}
+          levelsHref={state.returnTo?.href ?? `/${script}/`}
+          levelsLabel={state.returnTo?.label}
           progressHref={`/progress/?script=${script}`}
           matchStats={
             state.matchMistakes !== null

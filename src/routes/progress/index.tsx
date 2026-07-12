@@ -145,8 +145,8 @@ export default component$(() => {
   const sectionHref = tab === "kanji" ? "/kanji/" : `/${tab}/`;
   const drillHref =
     tab === "kanji"
-      ? `/kanji/quiz/${WEAK_KANJI_LEVEL_ID}/`
-      : `/${tab}/quiz/${WEAK_AREAS_LEVEL_ID}/`;
+      ? `/kanji/quiz/${WEAK_KANJI_LEVEL_ID}/?from=progress`
+      : `/${tab}/quiz/${WEAK_AREAS_LEVEL_ID}/?from=progress`;
 
   return (
     <>

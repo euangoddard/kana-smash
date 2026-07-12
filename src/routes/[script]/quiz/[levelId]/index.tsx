@@ -37,6 +37,7 @@ import {
 } from "~/data/levels";
 import { dueKana, REVIEW_POOL_SIZE } from "~/lib/srs";
 import { hasSeenIntro, markIntroSeen } from "~/lib/introductions";
+import { returnTargetFromLocation, type ReturnTarget } from "~/lib/return-to";
 import {
   hasWeakAreaData,
   loadProgress,
@@ -91,6 +92,9 @@ interface QuizState {
   matchIds: string[];
   /** Wrong guesses in the matching round; null until that round finishes. */
   matchMistakes: number | null;
+  /** Where Quit and the results actions lead when the session was entered
+   * from somewhere other than the level list (review hub, progress page). */
+  returnTo: ReturnTarget | null;
 }
 
 const WEAK_POOL_SIZE = 8;
@@ -130,6 +134,7 @@ export default component$(() => {
     soundMissing: false,
     matchIds: [],
     matchMistakes: null,
+    returnTo: null,
   });
 
   // Read params fresh from `loc` rather than closing over the outer
@@ -207,6 +212,7 @@ export default component$(() => {
   useVisibleTask$(({ track }) => {
     track(() => loc.params.script);
     track(() => loc.params.levelId);
+    state.returnTo = returnTargetFromLocation(loc.params.script);
     void startQuiz();
   });
 
@@ -277,7 +283,10 @@ export default component$(() => {
   return (
     <>
       <nav class="flex items-center justify-between text-sm">
-        <BackLink href={`/${script}/`} class="rounded-lg py-2 pr-3">
+        <BackLink
+          href={state.returnTo?.href ?? `/${script}/`}
+          class="rounded-lg py-2 pr-3"
+        >
           Quit
         </BackLink>
         <span class="text-ink-soft font-medium">
@@ -295,6 +304,8 @@ export default component$(() => {
             script={script}
             title="All caught up!"
             body="Nothing is due for review right now. Practise a level to add characters to the rotation, or come back later."
+            href="/review/"
+            cta="Back to review"
           />
         ) : (
           <QuizEmpty script={script} />
@@ -424,7 +435,8 @@ export default component$(() => {
           nextTitle={
             isWeakAreas || isDueReview ? undefined : nextLevel(levelId)?.title
           }
-          levelsHref={`/${script}/`}
+          levelsHref={state.returnTo?.href ?? `/${script}/`}
+          levelsLabel={state.returnTo?.label}
           progressHref={`/progress/?script=${script}`}
           matchStats={
             state.matchMistakes !== null
