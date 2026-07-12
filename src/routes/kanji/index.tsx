@@ -9,6 +9,7 @@ import { Link, type DocumentHead } from "@builder.io/qwik-city";
 import { BackLink } from "~/components/back-link";
 import { LevelCard } from "~/components/level-card";
 import { SoundToggle } from "~/components/sound-toggle";
+import { ALL_KANJI } from "~/data/kanji";
 import {
   KANJI_LEVELS,
   KANJI_SECTION_LABELS,
@@ -66,8 +67,9 @@ export default component$(() => {
       </header>
 
       <p class="text-ink-soft mt-4 max-w-md text-sm">
-        The 80 kanji of JLPT N5. Each one is drilled two ways — what it means,
-        and how it&apos;s read inside real words — and both are tracked
+        The 80 kanji of JLPT N5, then a second tier of everyday kanji toward N4
+        — {ALL_KANJI.length} in all. Each one is drilled two ways — what it
+        means, and how it&apos;s read inside real words — and both are tracked
         separately.
       </p>
 
@@ -123,7 +125,7 @@ export default component$(() => {
 export const head: DocumentHead = ({ url }) => {
   const title = "Kanji levels — Kana Smash";
   const description =
-    "Practise the 80 JLPT N5 kanji in themed levels, with meaning and reading drills.";
+    "Practise the JLPT N5 kanji and a second everyday tier in themed levels, with meaning and reading drills.";
   return {
     title,
     meta: buildMeta({ title, description, url }),

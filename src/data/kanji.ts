@@ -1,8 +1,9 @@
 /**
- * The 80 kanji of the classic JLPT N5 list, plus the everyday vocabulary
- * used to drill their readings. Unlike kana, a kanji in isolation has no
- * single correct reading — so meaning questions test the bare character,
- * while reading questions always test a whole word.
+ * The 80 kanji of the classic JLPT N5 list plus a second tier of everyday
+ * kanji (toward N4), with the vocabulary used to drill their readings.
+ * Unlike kana, a kanji in isolation has no single correct reading — so
+ * meaning questions test the bare character, while reading questions
+ * always test a whole word.
  */
 
 /** The two separately-tracked skills for a kanji. */
@@ -106,7 +107,8 @@ const KANJI_ROWS: [string, string, string, string][] = [
   // Nature
   ["山", "mountain", "サン", "やま"],
   ["川", "river", "セン", "かわ"],
-  ["天", "heaven; sky", "テン", ""],
+  // "heaven" alone, so it can't double up with 空 "sky; empty" in options.
+  ["天", "heaven", "テン", ""],
   ["気", "spirit; energy", "キ ケ", ""],
   ["雨", "rain", "ウ", "あめ"],
   // Descriptions
@@ -120,6 +122,70 @@ const KANJI_ROWS: [string, string, string, string][] = [
   ["語", "language", "ゴ", "かた(る)"],
   ["電", "electricity", "デン", ""],
   ["車", "car; vehicle", "シャ", "くるま"],
+  // Everyday life — the second tier, toward N4.
+  // Body & senses
+  ["手", "hand", "シュ", "て"],
+  ["足", "foot; leg", "ソク", "あし"],
+  ["目", "eye", "モク", "め"],
+  ["口", "mouth", "コウ", "くち"],
+  ["耳", "ear", "ジ", "みみ"],
+  ["頭", "head", "トウ", "あたま"],
+  ["体", "body", "タイ", "からだ"],
+  ["心", "heart; mind", "シン", "こころ"],
+  // Think, make & use
+  ["思", "think", "シ", "おも(う)"],
+  ["知", "know", "チ", "し(る)"],
+  ["住", "live; reside", "ジュウ", "す(む)"],
+  ["待", "wait", "タイ", "ま(つ)"],
+  ["持", "hold; carry", "ジ", "も(つ)"],
+  ["使", "use", "シ", "つか(う)"],
+  ["作", "make", "サク", "つく(る)"],
+  ["送", "send", "ソウ", "おく(る)"],
+  // Buy, sell & move
+  ["帰", "return home", "キ", "かえ(る)"],
+  ["買", "buy", "バイ", "か(う)"],
+  ["売", "sell", "バイ", "う(る)"],
+  ["教", "teach", "キョウ", "おし(える)"],
+  ["立", "stand", "リツ", "た(つ)"],
+  ["歩", "walk", "ホ", "ある(く)"],
+  ["走", "run", "ソウ", "はし(る)"],
+  ["起", "get up; wake", "キ", "お(きる)"],
+  // Seasons & sky
+  ["春", "spring", "シュン", "はる"],
+  ["夏", "summer", "カ", "なつ"],
+  ["秋", "autumn", "シュウ", "あき"],
+  ["冬", "winter", "トウ", "ふゆ"],
+  ["雪", "snow", "セツ", "ゆき"],
+  ["風", "wind", "フウ", "かぜ"],
+  ["空", "sky; empty", "クウ", "そら"],
+  ["星", "star", "セイ", "ほし"],
+  // Nature, animals & food
+  ["花", "flower", "カ", "はな"],
+  ["海", "sea", "カイ", "うみ"],
+  ["犬", "dog", "ケン", "いぬ"],
+  ["魚", "fish", "ギョ", "さかな"],
+  ["鳥", "bird", "チョウ", "とり"],
+  ["肉", "meat", "ニク", ""],
+  ["茶", "tea", "チャ サ", ""],
+  ["牛", "cow", "ギュウ", "うし"],
+  // Colours & opposites
+  ["新", "new", "シン", "あたら(しい)"],
+  ["古", "old", "コ", "ふる(い)"],
+  ["多", "many", "タ", "おお(い)"],
+  ["少", "few; a little", "ショウ", "すく(ない) すこ(し)"],
+  ["早", "early", "ソウ", "はや(い)"],
+  ["青", "blue", "セイ", "あお(い)"],
+  ["赤", "red", "セキ", "あか(い)"],
+  ["黒", "black", "コク", "くろ(い)"],
+  // Around town
+  ["家", "house; home", "カ ケ", "いえ"],
+  ["店", "shop", "テン", "みせ"],
+  ["駅", "station", "エキ", ""],
+  ["町", "town", "チョウ", "まち"],
+  ["道", "road; way", "ドウ", "みち"],
+  ["社", "company; shrine", "シャ", ""],
+  ["会", "meet; society", "カイ", "あ(う)"],
+  ["場", "place", "ジョウ", "ば"],
 ];
 
 export const ALL_KANJI: Kanji[] = KANJI_ROWS.map(([id, meaning, on, kun]) => ({
@@ -232,6 +298,71 @@ const WORD_ROWS: [string, string, string][] = [
   ["国", "くに", "country"],
   ["電車", "でんしゃ", "train"],
   ["車", "くるま", "car"],
+  // Everyday life — vocabulary for the second tier.
+  ["手", "て", "hand"],
+  ["足", "あし", "foot; leg"],
+  ["目", "め", "eye"],
+  ["入口", "いりぐち", "entrance"],
+  ["出口", "でぐち", "exit"],
+  ["耳", "みみ", "ear"],
+  ["頭", "あたま", "head"],
+  ["体", "からだ", "body"],
+  ["心", "こころ", "heart; mind"],
+  ["思う", "おもう", "to think"],
+  ["知る", "しる", "to know"],
+  ["住む", "すむ", "to live (somewhere)"],
+  ["待つ", "まつ", "to wait"],
+  ["持つ", "もつ", "to hold; to carry"],
+  ["使う", "つかう", "to use"],
+  ["作る", "つくる", "to make"],
+  ["送る", "おくる", "to send"],
+  ["帰る", "かえる", "to go home"],
+  ["買う", "かう", "to buy"],
+  ["買い物", "かいもの", "shopping"],
+  ["売る", "うる", "to sell"],
+  ["売店", "ばいてん", "kiosk; stand"],
+  ["教える", "おしえる", "to teach"],
+  ["立つ", "たつ", "to stand"],
+  ["歩く", "あるく", "to walk"],
+  ["走る", "はしる", "to run"],
+  ["起きる", "おきる", "to get up"],
+  ["春", "はる", "spring"],
+  ["夏", "なつ", "summer"],
+  ["秋", "あき", "autumn"],
+  ["冬", "ふゆ", "winter"],
+  ["雪", "ゆき", "snow"],
+  ["風", "かぜ", "wind"],
+  ["空", "そら", "sky"],
+  ["空気", "くうき", "air"],
+  ["星", "ほし", "star"],
+  ["花", "はな", "flower"],
+  ["花火", "はなび", "fireworks"],
+  ["海", "うみ", "sea"],
+  ["北海道", "ほっかいどう", "Hokkaido"],
+  ["犬", "いぬ", "dog"],
+  ["魚", "さかな", "fish"],
+  ["鳥", "とり", "bird"],
+  ["小鳥", "ことり", "small bird"],
+  ["肉", "にく", "meat"],
+  ["牛肉", "ぎゅうにく", "beef"],
+  ["お茶", "おちゃ", "green tea"],
+  ["新しい", "あたらしい", "new"],
+  ["新聞", "しんぶん", "newspaper"],
+  ["古い", "ふるい", "old (things)"],
+  ["多い", "おおい", "many"],
+  ["少し", "すこし", "a little"],
+  ["早い", "はやい", "early"],
+  ["青い", "あおい", "blue"],
+  ["赤い", "あかい", "red"],
+  ["黒い", "くろい", "black"],
+  ["家", "いえ", "house"],
+  ["店", "みせ", "shop"],
+  ["駅", "えき", "station"],
+  ["町", "まち", "town"],
+  ["道", "みち", "road; way"],
+  ["会う", "あう", "to meet"],
+  ["会社", "かいしゃ", "company"],
+  ["会場", "かいじょう", "venue"],
 ];
 
 export const ALL_WORDS: KanjiWord[] = WORD_ROWS.map(
@@ -284,6 +415,19 @@ const KANJI_CONFUSION: string[][] = [
   ["電", "雨"],
   ["出", "山"],
   ["上", "下"],
+  ["犬", "大", "天"],
+  ["牛", "午", "半"],
+  ["会", "今", "金"],
+  ["待", "持"],
+  ["少", "小"],
+  ["多", "名"],
+  ["体", "休"],
+  ["歩", "走", "足"],
+  ["思", "男"],
+  ["買", "見"],
+  ["雪", "電", "雨"],
+  ["早", "春", "星"],
+  ["古", "口"],
 ];
 
 const CONFUSION: Map<string, Set<string>> = new Map();

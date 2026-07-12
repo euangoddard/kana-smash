@@ -1,32 +1,22 @@
 import { component$, type QRL } from "@builder.io/qwik";
-import type { KanjiQuestion } from "~/lib/kanji-quiz";
+import type { WordQuestion } from "~/lib/word-quiz";
 
-interface KanjiQuizPromptProps {
-  question: KanjiQuestion;
+interface WordQuizPromptProps {
+  question: WordQuestion;
   onReplay$: QRL<() => void>;
 }
 
-/** The thing being asked about: a kanji, a meaning, a word, or a replay button. */
-export const KanjiQuizPrompt = component$<KanjiQuizPromptProps>(
+/** The thing being asked about: a written word, romaji, or a replay button. */
+export const WordQuizPrompt = component$<WordQuizPromptProps>(
   ({ question, onReplay$ }) => (
     <div class="mt-6 flex justify-center">
-      {question.kind === "kanji-to-meaning" && (
-        <p lang="ja" class="font-kana text-8xl font-medium tracking-wide">
-          {question.prompt}
-        </p>
-      )}
-      {question.kind === "meaning-to-kanji" && (
-        <p class="font-display max-w-sm text-center text-4xl font-bold text-balance">
-          {question.prompt}
-        </p>
-      )}
-      {question.kind === "word-to-reading" && (
+      {question.kind === "word-to-romaji" && (
         <p lang="ja" class="font-kana text-6xl font-medium tracking-wide">
           {question.prompt}
         </p>
       )}
-      {question.kind === "reading-to-word" && (
-        <p lang="ja" class="font-kana text-6xl font-medium tracking-wide">
+      {question.kind === "romaji-to-word" && (
+        <p class="font-display text-5xl font-bold lowercase">
           {question.prompt}
         </p>
       )}

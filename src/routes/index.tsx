@@ -1,5 +1,6 @@
 import { component$ } from "@builder.io/qwik";
 import { Link, type DocumentHead } from "@builder.io/qwik-city";
+import { DailyPanel } from "~/components/daily-panel";
 import { PracticeReminders } from "~/components/practice-reminders";
 import { buildMeta } from "~/lib/seo";
 
@@ -95,6 +96,8 @@ export default component$(() => {
           </Link>
         ))}
       </section>
+
+      <DailyPanel />
 
       <section class="mt-12" aria-label="How practice works">
         <h2 class="font-display text-lg font-bold">Three ways you’ll drill</h2>

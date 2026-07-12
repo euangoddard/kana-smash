@@ -16,7 +16,11 @@ import {
  */
 
 export type KanjiExerciseKind =
-  "kanji-to-meaning" | "meaning-to-kanji" | "word-to-reading" | "sound-to-word";
+  | "kanji-to-meaning"
+  | "meaning-to-kanji"
+  | "word-to-reading"
+  | "reading-to-word"
+  | "sound-to-word";
 
 export interface KanjiQuestion {
   kind: KanjiExerciseKind;
@@ -216,6 +220,21 @@ const buildQuestion = (
       ...withOptions(word.reading, distractorReadings(word, 3)),
     };
   }
+  if (kind === "reading-to-word") {
+    // The reverse direction: recognise which written word has this reading.
+    return {
+      kind,
+      facet: "reading",
+      testedKanjiIds: word.kanjiIds,
+      kanjiId: target.id,
+      wordId: word.id,
+      prompt: word.reading,
+      ...withOptions(
+        word.id,
+        distractorWords(word, pool, 3).map((w) => w.id),
+      ),
+    };
+  }
   return {
     kind,
     facet: "reading",
@@ -245,9 +264,15 @@ export const generateKanjiQuiz = (
         "kanji-to-meaning",
         "meaning-to-kanji",
         "word-to-reading",
+        "reading-to-word",
         "sound-to-word",
       ]
-    : ["kanji-to-meaning", "meaning-to-kanji", "word-to-reading"];
+    : [
+        "kanji-to-meaning",
+        "meaning-to-kanji",
+        "word-to-reading",
+        "reading-to-word",
+      ];
 
   const targets: Kanji[] = [];
   while (targets.length < config.questionCount) {
@@ -276,3 +301,23 @@ export const generateKanjiQuiz = (
  */
 export const buildKanjiMatchSet = (pool: Kanji[], count = 5): Kanji[] =>
   shuffle(pool).slice(0, count);
+
+/**
+ * One random question over `pool` for challenge mode — never a listening
+ * question (audio would eat the clock) and never the same kanji as the one
+ * just asked.
+ */
+export const randomKanjiQuestion = (
+  pool: Kanji[],
+  avoidId?: string,
+): KanjiQuestion => {
+  const candidates = pool.filter((k) => k.id !== avoidId);
+  const target = pick(candidates.length ? candidates : pool);
+  const kind = pick<KanjiExerciseKind>([
+    "kanji-to-meaning",
+    "meaning-to-kanji",
+    "word-to-reading",
+    "reading-to-word",
+  ]);
+  return buildQuestion(target, kind, pool);
+};

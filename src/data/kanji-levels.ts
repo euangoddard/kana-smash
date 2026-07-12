@@ -1,6 +1,7 @@
 import { ALL_KANJI } from "./kanji";
 
-export type KanjiLevelSection = "foundations" | "people" | "world" | "review";
+export type KanjiLevelSection =
+  "foundations" | "people" | "world" | "everyday" | "review";
 
 export interface KanjiLevel {
   id: string;
@@ -60,9 +61,34 @@ export const KANJI_LEVELS: KanjiLevel[] = [
     chars("上下中外東西南北右左山川天気雨大小高長白国語電車"),
     "world",
   ),
+  level("body", "Body & senses", chars("手足目口耳頭体心"), "everyday"),
+  level("verbs-3", "Think, make & use", chars("思知住待持使作送"), "everyday"),
+  level("verbs-4", "Buy, sell & move", chars("帰買売教立歩走起"), "everyday"),
+  level("seasons", "Seasons & sky", chars("春夏秋冬雪風空星"), "everyday"),
+  level(
+    "nature-2",
+    "Nature, animals & food",
+    chars("花海犬魚鳥肉茶牛"),
+    "everyday",
+  ),
+  level(
+    "opposites",
+    "Colours & opposites",
+    chars("新古多少早青赤黒"),
+    "everyday",
+  ),
+  level("town", "Around town", chars("家店駅町道社会場"), "everyday"),
+  level(
+    "checkpoint-everyday",
+    "Checkpoint · everyday life",
+    chars(
+      "手足目口耳頭体心思知住待持使作送帰買売教立歩走起春夏秋冬雪風空星花海犬魚鳥肉茶牛新古多少早青赤黒家店駅町道社会場",
+    ),
+    "everyday",
+  ),
   level(
     "everything",
-    "All 80 kanji",
+    `All ${ALL_KANJI.length} kanji`,
     ALL_KANJI.map((k) => k.id),
     "review",
   ),
@@ -70,6 +96,9 @@ export const KANJI_LEVELS: KanjiLevel[] = [
 
 /** Special dynamic level: its kanji are picked from progress data at runtime. */
 export const WEAK_KANJI_LEVEL_ID = "weak-areas";
+
+/** Special dynamic level: kanji due for spaced-repetition review right now. */
+export const DUE_KANJI_REVIEW_LEVEL_ID = "due-review";
 
 export const KANJI_LEVELS_BY_ID: ReadonlyMap<string, KanjiLevel> = new Map(
   KANJI_LEVELS.map((l) => [l.id, l]),
@@ -85,6 +114,7 @@ export const KANJI_SECTION_LABELS: Record<KanjiLevelSection, string> = {
   foundations: "Numbers & time",
   people: "People & everyday actions",
   world: "Places & descriptions",
+  everyday: "Everyday life — toward N4",
   review: "Grand review",
 };
 
@@ -92,5 +122,6 @@ export const KANJI_SECTIONS: KanjiLevelSection[] = [
   "foundations",
   "people",
   "world",
+  "everyday",
   "review",
 ];

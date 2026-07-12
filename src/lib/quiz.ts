@@ -138,6 +138,22 @@ export const generateQuiz = (
 export const DEFAULT_QUESTION_COUNT = 10;
 
 /**
+ * One random question over `pool` for challenge mode — never a listening
+ * question (audio would eat the clock) and never the same kana as the one
+ * just asked.
+ */
+export const randomKanaQuestion = (
+  pool: Kana[],
+  script: Script,
+  avoidId?: string,
+): Question => {
+  const candidates = pool.filter((k) => k.id !== avoidId);
+  const target = pick(candidates.length ? candidates : pool);
+  const kind = pick<ExerciseKind>(["kana-to-romaji", "romaji-to-kana"]);
+  return buildQuestion(target, kind, script);
+};
+
+/**
  * Up to `count` kana for the closing matching round, picked at random from
  * `pool`. Never two kana that share a romaji (e.g. じ and ぢ both "ji") —
  * that would make the matching puzzle ambiguous.

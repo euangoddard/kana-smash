@@ -1,4 +1,5 @@
 import { ALL_KANA, KANA_BY_ID, type Kana, type Script } from "~/data/kana";
+import { recordActivity } from "./streak";
 
 /**
  * All progress lives in localStorage — this app has no backend. Every
@@ -38,20 +39,45 @@ export const loadProgress = (): ProgressData => {
   }
 };
 
-export const recordAnswer = (
+const saveAttempts = (
   script: Script,
-  kanaId: string,
+  kanaIds: string[],
   correct: boolean,
 ): void => {
   const data = loadProgress();
-  const attempts = data[script][kanaId] ?? [];
-  attempts.push({ r: correct ? 1 : 0, t: Date.now() });
-  data[script][kanaId] = attempts.slice(-MAX_ATTEMPTS);
+  const now = Date.now();
+  for (const kanaId of kanaIds) {
+    const attempts = data[script][kanaId] ?? [];
+    attempts.push({ r: correct ? 1 : 0, t: now });
+    data[script][kanaId] = attempts.slice(-MAX_ATTEMPTS);
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     // Storage full or blocked — the quiz still works, we just can't save.
   }
+};
+
+export const recordAnswer = (
+  script: Script,
+  kanaId: string,
+  correct: boolean,
+): void => {
+  saveAttempts(script, [kanaId], correct);
+  recordActivity();
+};
+
+/**
+ * Record one word answer against every kana in the word — reading ねこ
+ * counts for both ね and こ, but only once toward the daily streak.
+ */
+export const recordWordAnswer = (
+  script: Script,
+  kanaIds: string[],
+  correct: boolean,
+): void => {
+  saveAttempts(script, kanaIds, correct);
+  recordActivity();
 };
 
 /** Recency-weighted accuracy in [0, 1], or null if never attempted. */

@@ -1,5 +1,6 @@
 import { component$, type QRL } from "@builder.io/qwik";
 import { Link } from "@builder.io/qwik-city";
+import { StreakLine } from "~/components/streak-line";
 
 /** One missed item chip: what was shown plus a short reminder of the answer. */
 export interface MissedItem {
@@ -53,6 +54,7 @@ export const QuizResults = component$<QuizResultsProps>(
             ? "Solid work. The misses below are your next win."
             : "Good practice — these characters just need more reps."}
       </p>
+      <StreakLine />
 
       {missed.length > 0 && (
         <div class="border-paper-line mx-auto mt-6 max-w-sm rounded-2xl border-2 p-4 text-left">

@@ -29,6 +29,7 @@ import {
   SECTIONS,
   WEAK_AREAS_LEVEL_ID,
 } from "~/data/levels";
+import { STUDY_WORD_BY_ID, wordLevelsForScript } from "~/data/words";
 import { hasWeakAreaData, levelMastery, loadProgress } from "~/lib/progress";
 import { buildMeta } from "~/lib/seo";
 import { setSoundEnabled, soundEnabled } from "~/lib/settings";
@@ -58,6 +59,18 @@ export default component$(() => {
     const data = loadProgress();
     for (const level of LEVELS) {
       mastery[level.id] = levelMastery(data, script, level.kanaIds);
+    }
+    // Word levels are read through the kana they contain, so their mastery
+    // is the mastery of those kana (word answers feed the same records).
+    for (const level of wordLevelsForScript(script)) {
+      const kanaIds = [
+        ...new Set(
+          level.wordIds.flatMap(
+            (id) => STUDY_WORD_BY_ID.get(id)?.kanaIds ?? [],
+          ),
+        ),
+      ];
+      mastery[`words:${level.id}`] = levelMastery(data, script, kanaIds);
     }
     weakReady.value = hasWeakAreaData(data, script);
     soundOn.value = soundEnabled();
@@ -139,6 +152,27 @@ export default component$(() => {
           </ul>
         </section>
       ))}
+
+      <section class="mt-10" aria-label="Real words">
+        <h2 class="eyebrow">Real words</h2>
+        <p class="text-ink-soft mt-2 text-sm">
+          Whole words, read in one go — where combination kana, small つ and
+          long vowels really live.
+        </p>
+        <ul class="mt-3 space-y-2">
+          {wordLevelsForScript(script).map((level) => (
+            <LevelCard
+              key={level.id}
+              href={`/${script}/words/quiz/${level.id}/`}
+              title={level.title}
+              sample={level.sample}
+              characterCount={level.wordIds.length}
+              unit="words"
+              mastery={loaded.value ? mastery[`words:${level.id}`] : undefined}
+            />
+          ))}
+        </ul>
+      </section>
     </>
   );
 });

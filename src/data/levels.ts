@@ -91,6 +91,9 @@ export const LEVELS: Level[] = [
 /** Special dynamic level: its kana are picked from progress data at runtime. */
 export const WEAK_AREAS_LEVEL_ID = "weak-areas";
 
+/** Special dynamic level: kana due for spaced-repetition review right now. */
+export const DUE_REVIEW_LEVEL_ID = "due-review";
+
 export const LEVELS_BY_ID: ReadonlyMap<string, Level> = new Map(
   LEVELS.map((l) => [l.id, l]),
 );

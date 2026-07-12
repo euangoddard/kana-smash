@@ -19,13 +19,15 @@ interface LevelCardProps {
   /** Sample characters shown alongside the title. */
   sample: string;
   characterCount: number;
+  /** What's being counted — "characters" for levels, "words" for vocab. */
+  unit?: string;
   /** null = attempted but unscored, undefined = mastery not loaded yet. */
   mastery: number | null | undefined;
 }
 
 /** One level entry in a level list, with its mastery chip. */
 export const LevelCard = component$<LevelCardProps>(
-  ({ href, title, sample, characterCount, mastery }) => {
+  ({ href, title, sample, characterCount, unit = "characters", mastery }) => {
     const chip = masteryChip(mastery);
     return (
       <li>
@@ -40,7 +42,7 @@ export const LevelCard = component$<LevelCardProps>(
           <span class="flex-1">
             <span class="block font-semibold">{title}</span>
             <span class="text-ink-faint block text-xs">
-              {characterCount} characters
+              {characterCount} {unit}
             </span>
           </span>
           <span

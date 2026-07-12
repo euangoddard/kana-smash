@@ -22,6 +22,21 @@ Tailwind CSS v4.
   recency-weighted accuracy per character, shown as a gojūon-grid heatmap
   on the Progress page. A special _weak spots_ level drills your worst
   characters for each script.
+- **Daily review (spaced repetition)** — each character earns a longer
+  review interval for every consecutive correct answer and comes due just
+  before you'd forget it. The `/review/` hub shows what's due per course;
+  intervals are derived from the stored attempt history, so no extra state.
+- **Streaks & a daily goal** — every answered question counts toward a
+  20-a-day goal; consecutive practised days build a streak (with best),
+  shown on the home page, review hub and results screens.
+- **Real words** — kana vocabulary levels (ねこ, がっこう, コーヒー …)
+  drill whole-word reading where yōon, sokuon and long vowels actually
+  bite; word answers feed the per-kana progress records.
+- **Kanji** — the 80 JLPT N5 kanji plus a second everyday tier toward N4
+  (136 in all), drilled by meaning and by reading inside real words, both
+  tracked separately.
+- **Challenge mode** — a 60-second speed round per course over characters
+  you've met, with a local best score to beat.
 - **Accessible** — large tap targets, visible focus rings, live-region
   answer feedback, `lang="ja"` on all kana, reduced-motion support,
   Japanese-style 〇/✗ marks for correct/incorrect.
@@ -32,12 +47,16 @@ Tailwind CSS v4.
 
 ```
 src/
-├── data/         kana dataset, confusion maps, level definitions
-├── lib/          progress tracking, quiz generation, speech synthesis
+├── data/         kana/kanji/word datasets, confusion maps, level definitions
+├── lib/          progress, SRS scheduling, streaks, quiz generation, speech
 └── routes/
     ├── index.tsx                       home — pick a script
     ├── [script]/index.tsx              level list (hiragana | katakana)
-    ├── [script]/quiz/[levelId]/        quiz session
+    ├── [script]/quiz/[levelId]/        kana quiz session
+    ├── [script]/words/quiz/[levelId]/  word-reading quiz session
+    ├── kanji/                          kanji level list + quiz sessions
+    ├── review/                         daily review hub (SRS + streak)
+    ├── challenge/                      60-second speed rounds
     └── progress/                       accuracy heatmap
 ```
 

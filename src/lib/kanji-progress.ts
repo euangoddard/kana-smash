@@ -6,6 +6,7 @@ import {
   WEAK_THRESHOLD,
   type Attempt,
 } from "./progress";
+import { recordActivity } from "./streak";
 
 /**
  * Kanji progress, kept separately from kana progress because the unit is
@@ -53,6 +54,9 @@ export const recordKanjiAnswer = (
   } catch {
     // Storage full or blocked — the quiz still works, we just can't save.
   }
+  // One question answered = one point toward the daily goal, however many
+  // kanji it touched.
+  recordActivity();
 };
 
 /** Recency-weighted accuracy for one facet, or null if never attempted. */
