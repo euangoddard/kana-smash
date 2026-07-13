@@ -29,7 +29,7 @@ const SCRIPT_CARDS = [
     ja: "漢字",
     glyph: "漢",
     blurb:
-      "The first 80 kanji — meanings and readings, drilled through real words.",
+      "136 essential kanji, from JLPT N5 up — meanings and readings, drilled through real words.",
     accent: "text-matcha",
     ring: "hover:border-matcha focus-visible:border-matcha",
   },
@@ -139,9 +139,9 @@ export default component$(() => {
 });
 
 export const head: DocumentHead = ({ url }) => {
-  const title = "Kana Smash — practise hiragana & katakana";
+  const title = "Kana Smash — practise hiragana, katakana & kanji";
   const description =
-    "Short, adaptive multiple-choice drills for learning to read Japanese hiragana and katakana, with listening practice and a weakness heatmap.";
+    "Short, adaptive multiple-choice drills for learning to read Japanese hiragana, katakana and kanji, with word reading, daily review and a weakness heatmap.";
   return {
     title,
     meta: buildMeta({ title, description, url }),

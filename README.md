@@ -1,8 +1,8 @@
 # Kana Smash ⚡️
 
-A mobile-first PWA for learning to read the Japanese kana — hiragana and
-katakana — built with [Qwik City](https://qwik.dev/qwikcity/overview/) and
-Tailwind CSS v4.
+A mobile-first PWA for learning to read Japanese — hiragana, katakana and
+the first 136 kanji — built with
+[Qwik City](https://qwik.dev/qwikcity/overview/) and Tailwind CSS v4.
 
 ## Features
 

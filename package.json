@@ -1,6 +1,6 @@
 {
   "name": "kana-smash",
-  "description": "Short, adaptive multiple-choice drills for learning to read Japanese hiragana and katakana.",
+  "description": "Short, adaptive multiple-choice drills for learning to read Japanese hiragana, katakana and kanji.",
   "engines": {
     "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
   },
