@@ -1,4 +1,5 @@
 import {
+  $,
   component$,
   useSignal,
   useStore,
@@ -6,12 +7,14 @@ import {
 } from "@builder.io/qwik";
 import { Link, type DocumentHead } from "@builder.io/qwik-city";
 import { BackLink } from "~/components/back-link";
+import { SoundToggle } from "~/components/sound-toggle";
 import { SCRIPT_LABELS, SCRIPTS } from "~/data/kana";
 import { DUE_KANJI_REVIEW_LEVEL_ID } from "~/data/kanji-levels";
 import { DUE_REVIEW_LEVEL_ID } from "~/data/levels";
 import { loadKanjiProgress } from "~/lib/kanji-progress";
 import { loadProgress } from "~/lib/progress";
 import { buildMeta } from "~/lib/seo";
+import { setSoundEnabled, soundEnabled } from "~/lib/settings";
 import { dueKana, dueKanji } from "~/lib/srs";
 import { streakStats, type StreakStats } from "~/lib/streak";
 
@@ -26,6 +29,7 @@ export default component$(() => {
   const stats = useSignal<StreakStats | null>(null);
   const courses = useStore<{ list: CourseDue[] }>({ list: [] });
   const loaded = useSignal(false);
+  const soundOn = useSignal(true);
 
   // Everything here derives from localStorage — client-only.
   // eslint-disable-next-line qwik/no-use-visible-task
@@ -46,7 +50,13 @@ export default component$(() => {
       },
     ];
     stats.value = streakStats();
+    soundOn.value = soundEnabled();
     loaded.value = true;
+  });
+
+  const toggleSound = $(() => {
+    soundOn.value = !soundOn.value;
+    setSoundEnabled(soundOn.value);
   });
 
   const totalDue = courses.list.reduce((sum, c) => sum + c.due, 0);
@@ -58,9 +68,12 @@ export default component$(() => {
         <BackLink href="/">Home</BackLink>
       </nav>
 
-      <h1 class="font-display mt-4 text-3xl font-bold tracking-tight">
-        Daily review
-      </h1>
+      <header class="mt-4 flex items-end justify-between gap-4">
+        <h1 class="font-display text-3xl font-bold tracking-tight">
+          Daily review
+        </h1>
+        <SoundToggle on={soundOn.value} onToggle$={toggleSound} />
+      </header>
       <p class="text-ink-soft mt-2 max-w-md text-sm">
         Spaced repetition keeps what you&apos;ve learned alive: each character
         comes back just before you&apos;d forget it — quickly after a miss,
