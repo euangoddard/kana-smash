@@ -36,6 +36,11 @@
   --color-matcha: oklch(50% 0.1 148);
   --color-matcha-wash: oklch(91% 0.05 148);
 
+  /* Fuji murasaki wisteria: the look-alikes drill accent. */
+  --color-fuji: oklch(50% 0.13 310);
+  --color-fuji-deep: oklch(42% 0.12 310);
+  --color-fuji-wash: oklch(90% 0.04 310);
+
   /* Heatmap midpoints. */
   --color-heat-low: oklch(62% 0.16 32);
   --color-heat-mid: oklch(78% 0.12 78);

@@ -9,11 +9,12 @@ import { Link, type DocumentHead } from "@builder.io/qwik-city";
 import { BackLink } from "~/components/back-link";
 import { LevelCard } from "~/components/level-card";
 import { SoundToggle } from "~/components/sound-toggle";
-import { ALL_KANJI } from "~/data/kanji";
+import { ALL_KANJI, confusableKanjiPool } from "~/data/kanji";
 import {
   KANJI_LEVELS,
   KANJI_SECTION_LABELS,
   KANJI_SECTIONS,
+  LOOKALIKES_KANJI_LEVEL_ID,
   WEAK_KANJI_LEVEL_ID,
 } from "~/data/kanji-levels";
 import {
@@ -26,6 +27,7 @@ import { setSoundEnabled, soundEnabled } from "~/lib/settings";
 import { findJapaneseVoice } from "~/lib/speech";
 
 export default component$(() => {
+  const lookalikeSample = confusableKanjiPool().slice(0, 4).join(" · ");
   const mastery = useStore<Record<string, number | null>>({});
   const weakReady = useSignal(false);
   const soundOn = useSignal(true);
@@ -95,6 +97,28 @@ export default component$(() => {
             whatever trips you up.
           </div>
         )}
+
+        <Link
+          href={`/kanji/quiz/${LOOKALIKES_KANJI_LEVEL_ID}/`}
+          class="bg-fuji text-paper hover:bg-fuji-deep mt-3 block rounded-2xl p-5 transition-colors"
+        >
+          <span class="font-display text-lg font-bold">
+            Tell the look-alikes apart
+          </span>
+          <span class="mt-1 block text-sm opacity-90">
+            Kanji that are easy to mix up
+            {lookalikeSample && (
+              <>
+                {" "}
+                — like{" "}
+                <span lang="ja" class="font-kana">
+                  {lookalikeSample}
+                </span>
+              </>
+            )}
+            .
+          </span>
+        </Link>
       </section>
 
       {KANJI_SECTIONS.map((section) => (

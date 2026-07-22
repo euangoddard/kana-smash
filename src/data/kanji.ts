@@ -444,6 +444,10 @@ export const confusableKanjiIds = (id: string): string[] => [
   ...(CONFUSION.get(id) ?? []),
 ];
 
+/** Every kanji with at least one visual confusable — the pool for the
+ * "look-alikes" drill (人/入, 木/本/休, 日/白/百, etc.). */
+export const confusableKanjiPool = (): string[] => [...CONFUSION.keys()];
+
 /** Readings joined for display, e.g. "スイ · みず". */
 export const readingsLabel = (kanji: Kanji): string =>
   [...kanji.on, ...kanji.kun].join(" · ");

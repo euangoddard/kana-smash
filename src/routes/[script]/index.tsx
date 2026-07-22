@@ -16,6 +16,7 @@ import { BackLink } from "~/components/back-link";
 import { LevelCard } from "~/components/level-card";
 import { SoundToggle } from "~/components/sound-toggle";
 import {
+  confusableKanaPool,
   displayKana,
   isScript,
   KANA_BY_ID,
@@ -25,6 +26,7 @@ import {
 } from "~/data/kana";
 import {
   LEVELS,
+  LOOKALIKES_LEVEL_ID,
   SECTION_LABELS,
   SECTIONS,
   WEAK_AREAS_LEVEL_ID,
@@ -47,6 +49,10 @@ export default component$(() => {
   const loc = useLocation();
   const script = loc.params.script as Script;
   const label = SCRIPT_LABELS[script];
+  const lookalikeSample = confusableKanaPool(script)
+    .slice(0, 4)
+    .map((id) => displayKana(KANA_BY_ID.get(id)!, script))
+    .join(" · ");
 
   const mastery = useStore<Record<string, number | null>>({});
   const weakReady = useSignal(false);
@@ -124,6 +130,28 @@ export default component$(() => {
             whatever trips you up.
           </div>
         )}
+
+        <Link
+          href={`/${script}/quiz/${LOOKALIKES_LEVEL_ID}/`}
+          class="bg-fuji text-paper hover:bg-fuji-deep mt-3 block rounded-2xl p-5 transition-colors"
+        >
+          <span class="font-display text-lg font-bold">
+            Tell the look-alikes apart
+          </span>
+          <span class="mt-1 block text-sm opacity-90">
+            {label.en} that are easy to mix up
+            {lookalikeSample && (
+              <>
+                {" "}
+                — like{" "}
+                <span lang="ja" class="font-kana">
+                  {lookalikeSample}
+                </span>
+              </>
+            )}
+            .
+          </span>
+        </Link>
       </section>
 
       {SECTIONS.map((section) => (

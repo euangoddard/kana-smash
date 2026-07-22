@@ -100,6 +100,10 @@ export const WEAK_KANJI_LEVEL_ID = "weak-areas";
 /** Special dynamic level: kanji due for spaced-repetition review right now. */
 export const DUE_KANJI_REVIEW_LEVEL_ID = "due-review";
 
+/** Special dynamic level: kanji commonly confused with each other
+ * (人/入, 木/本/休, 日/白/百 …), drawn from the confusion data in `kanji.ts`. */
+export const LOOKALIKES_KANJI_LEVEL_ID = "look-alikes";
+
 export const KANJI_LEVELS_BY_ID: ReadonlyMap<string, KanjiLevel> = new Map(
   KANJI_LEVELS.map((l) => [l.id, l]),
 );

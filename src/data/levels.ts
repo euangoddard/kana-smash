@@ -94,6 +94,10 @@ export const WEAK_AREAS_LEVEL_ID = "weak-areas";
 /** Special dynamic level: kana due for spaced-repetition review right now. */
 export const DUE_REVIEW_LEVEL_ID = "due-review";
 
+/** Special dynamic level: kana commonly confused with each other
+ * (シ/ツ/ソ/ン, は/ほ, ぬ/め/の …), drawn from the confusion data in `kana.ts`. */
+export const LOOKALIKES_LEVEL_ID = "look-alikes";
+
 export const LEVELS_BY_ID: ReadonlyMap<string, Level> = new Map(
   LEVELS.map((l) => [l.id, l]),
 );

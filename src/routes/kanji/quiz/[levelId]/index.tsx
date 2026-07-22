@@ -20,11 +20,12 @@ import { MatchingExercise } from "~/components/quiz/matching-exercise";
 import { QuizEmpty } from "~/components/quiz/quiz-empty";
 import { QuizProgress } from "~/components/quiz/quiz-progress";
 import { QuizResults } from "~/components/quiz/quiz-results";
-import { KANJI_BY_ID, WORD_BY_ID } from "~/data/kanji";
+import { confusableKanjiPool, KANJI_BY_ID, WORD_BY_ID } from "~/data/kanji";
 import {
   DUE_KANJI_REVIEW_LEVEL_ID,
   KANJI_LEVELS,
   KANJI_LEVELS_BY_ID,
+  LOOKALIKES_KANJI_LEVEL_ID,
   nextKanjiLevel,
   WEAK_KANJI_LEVEL_ID,
 } from "~/data/kanji-levels";
@@ -55,7 +56,8 @@ export const onGet: RequestHandler = ({ params, error }) => {
   const validLevel =
     KANJI_LEVELS_BY_ID.has(params.levelId) ||
     params.levelId === WEAK_KANJI_LEVEL_ID ||
-    params.levelId === DUE_KANJI_REVIEW_LEVEL_ID;
+    params.levelId === DUE_KANJI_REVIEW_LEVEL_ID ||
+    params.levelId === LOOKALIKES_KANJI_LEVEL_ID;
   if (!validLevel) throw error(404, "Not found");
 };
 
@@ -64,6 +66,7 @@ export const onStaticGenerate: StaticGenerateHandler = () => ({
     ...KANJI_LEVELS.map((l) => l.id),
     WEAK_KANJI_LEVEL_ID,
     DUE_KANJI_REVIEW_LEVEL_ID,
+    LOOKALIKES_KANJI_LEVEL_ID,
   ].map((levelId) => ({ levelId })),
 });
 
@@ -120,12 +123,15 @@ export default component$(() => {
   const levelId = loc.params.levelId;
   const isWeakAreas = levelId === WEAK_KANJI_LEVEL_ID;
   const isDueReview = levelId === DUE_KANJI_REVIEW_LEVEL_ID;
+  const isLookalikes = levelId === LOOKALIKES_KANJI_LEVEL_ID;
   const level = KANJI_LEVELS_BY_ID.get(levelId);
   const levelTitle = isWeakAreas
     ? "Weak spots"
     : isDueReview
       ? "Daily review"
-      : (level?.title ?? "");
+      : isLookalikes
+        ? "Look-alikes"
+        : (level?.title ?? "");
 
   const state = useStore<QuizState>({
     phase: "loading",
@@ -152,6 +158,9 @@ export default component$(() => {
       return dueKanji(loadKanjiProgress())
         .slice(0, REVIEW_POOL_SIZE)
         .map((k) => k.id);
+    }
+    if (currentLevelId === LOOKALIKES_KANJI_LEVEL_ID) {
+      return confusableKanjiPool();
     }
     if (currentLevelId !== WEAK_KANJI_LEVEL_ID) {
       return KANJI_LEVELS_BY_ID.get(currentLevelId)?.kanjiIds ?? [];
@@ -192,6 +201,7 @@ export default component$(() => {
     const firstVisit =
       currentLevelId !== WEAK_KANJI_LEVEL_ID &&
       currentLevelId !== DUE_KANJI_REVIEW_LEVEL_ID &&
+      currentLevelId !== LOOKALIKES_KANJI_LEVEL_ID &&
       !hasSeenIntro("kanji", currentLevelId);
     if (firstVisit) markIntroSeen("kanji", currentLevelId);
     state.introRecap = !firstVisit;
@@ -415,12 +425,15 @@ export default component$(() => {
           missed={state.missed}
           onRetry$={startQuiz}
           nextHref={
-            isWeakAreas || isDueReview || !nextKanjiLevel(levelId)
+            isWeakAreas ||
+            isDueReview ||
+            isLookalikes ||
+            !nextKanjiLevel(levelId)
               ? undefined
               : `/kanji/quiz/${nextKanjiLevel(levelId)!.id}/`
           }
           nextTitle={
-            isWeakAreas || isDueReview
+            isWeakAreas || isDueReview || isLookalikes
               ? undefined
               : nextKanjiLevel(levelId)?.title
           }
@@ -445,7 +458,9 @@ export const head: DocumentHead = ({ params, url }) => {
       ? "Weak spots"
       : params.levelId === DUE_KANJI_REVIEW_LEVEL_ID
         ? "Daily review"
-        : level?.title;
+        : params.levelId === LOOKALIKES_KANJI_LEVEL_ID
+          ? "Look-alikes"
+          : level?.title;
   const title = `${levelTitle ?? "Practice"} · Kanji — Kana Smash`;
   const description = `Meaning and reading drill for ${(levelTitle ?? "this level").toLowerCase()} in kanji.`;
   return {
