@@ -94,6 +94,10 @@ export const WEAK_AREAS_LEVEL_ID = "weak-areas";
 /** Special dynamic level: kana due for spaced-repetition review right now. */
 export const DUE_REVIEW_LEVEL_ID = "due-review";
 
+/** Special dynamic level: every kana, once each in random order — unlocks
+ * once all of them have been tested at least once. */
+export const ALL_KANA_CHALLENGE_LEVEL_ID = "all-kana-challenge";
+
 export const LEVELS_BY_ID: ReadonlyMap<string, Level> = new Map(
   LEVELS.map((l) => [l.id, l]),
 );

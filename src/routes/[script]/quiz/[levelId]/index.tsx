@@ -21,6 +21,7 @@ import { QuizProgress } from "~/components/quiz/quiz-progress";
 import { QuizPrompt } from "~/components/quiz/quiz-prompt";
 import { QuizResults } from "~/components/quiz/quiz-results";
 import {
+  ALL_KANA,
   displayKana,
   isScript,
   KANA_BY_ID,
@@ -29,6 +30,7 @@ import {
   type Script,
 } from "~/data/kana";
 import {
+  ALL_KANA_CHALLENGE_LEVEL_ID,
   DUE_REVIEW_LEVEL_ID,
   LEVELS,
   LEVELS_BY_ID,
@@ -60,15 +62,19 @@ export const onGet: RequestHandler = ({ params, error }) => {
   const validLevel =
     LEVELS_BY_ID.has(params.levelId) ||
     params.levelId === WEAK_AREAS_LEVEL_ID ||
-    params.levelId === DUE_REVIEW_LEVEL_ID;
+    params.levelId === DUE_REVIEW_LEVEL_ID ||
+    params.levelId === ALL_KANA_CHALLENGE_LEVEL_ID;
   if (!isScript(params.script) || !validLevel) throw error(404, "Not found");
 };
 
 export const onStaticGenerate: StaticGenerateHandler = () => ({
   params: SCRIPTS.flatMap((script) =>
-    [...LEVELS.map((l) => l.id), WEAK_AREAS_LEVEL_ID, DUE_REVIEW_LEVEL_ID].map(
-      (levelId) => ({ script, levelId }),
-    ),
+    [
+      ...LEVELS.map((l) => l.id),
+      WEAK_AREAS_LEVEL_ID,
+      DUE_REVIEW_LEVEL_ID,
+      ALL_KANA_CHALLENGE_LEVEL_ID,
+    ].map((levelId) => ({ script, levelId })),
   ),
 });
 
@@ -114,12 +120,15 @@ export default component$(() => {
   const levelId = loc.params.levelId;
   const isWeakAreas = levelId === WEAK_AREAS_LEVEL_ID;
   const isDueReview = levelId === DUE_REVIEW_LEVEL_ID;
+  const isAllKanaChallenge = levelId === ALL_KANA_CHALLENGE_LEVEL_ID;
   const level = LEVELS_BY_ID.get(levelId);
   const levelTitle = isWeakAreas
     ? "Weak spots"
     : isDueReview
       ? "Daily review"
-      : (level?.title ?? "");
+      : isAllKanaChallenge
+        ? "All-kana challenge"
+        : (level?.title ?? "");
 
   const state = useStore<QuizState>({
     phase: "loading",
@@ -150,6 +159,9 @@ export default component$(() => {
         .slice(0, REVIEW_POOL_SIZE)
         .map((k) => k.id);
     }
+    if (currentLevelId === ALL_KANA_CHALLENGE_LEVEL_ID) {
+      return ALL_KANA.map((k) => k.id);
+    }
     if (currentLevelId !== WEAK_AREAS_LEVEL_ID) {
       return LEVELS_BY_ID.get(currentLevelId)?.kanaIds ?? [];
     }
@@ -160,6 +172,8 @@ export default component$(() => {
 
   const startQuiz = $(async () => {
     const currentScript = loc.params.script as Script;
+    const currentLevelId = loc.params.levelId;
+    const isChallenge = currentLevelId === ALL_KANA_CHALLENGE_LEVEL_ID;
     const poolIds = await buildPoolIds();
     if (!poolIds.length) {
       state.phase = "empty";
@@ -174,22 +188,26 @@ export default component$(() => {
     state.soundMissing = soundWanted && !includeSound;
     const pool = poolIds.map((id) => KANA_BY_ID.get(id)!);
     state.questions = generateQuiz(pool, currentScript, {
-      questionCount: DEFAULT_QUESTION_COUNT,
+      questionCount: isChallenge ? pool.length : DEFAULT_QUESTION_COUNT,
       includeSound,
     });
-    state.matchIds = buildMatchSet(pool).map((k) => k.id);
+    // The challenge is a single pass over every kana — no closing matching
+    // round on top of that.
+    state.matchIds = isChallenge
+      ? []
+      : buildMatchSet(pool).map((k) => k.id);
     state.matchMistakes = null;
     state.index = 0;
     state.selected = null;
     state.correctCount = 0;
     state.missedIds = [];
     // First time on a regular level, open with the character introduction
-    // (weak-spot and review sessions reuse known characters, so nothing is
-    // "new" there).
-    const currentLevelId = loc.params.levelId;
+    // (weak-spot, review, and challenge sessions reuse known characters, so
+    // nothing is "new" there).
     const firstVisit =
       currentLevelId !== WEAK_AREAS_LEVEL_ID &&
       currentLevelId !== DUE_REVIEW_LEVEL_ID &&
+      currentLevelId !== ALL_KANA_CHALLENGE_LEVEL_ID &&
       !hasSeenIntro(currentScript, currentLevelId);
     if (firstVisit) markIntroSeen(currentScript, currentLevelId);
     state.introRecap = !firstVisit;
@@ -428,12 +446,17 @@ export default component$(() => {
           })}
           onRetry$={startQuiz}
           nextHref={
-            isWeakAreas || isDueReview || !nextLevel(levelId)
+            isWeakAreas ||
+            isDueReview ||
+            isAllKanaChallenge ||
+            !nextLevel(levelId)
               ? undefined
               : `/${script}/quiz/${nextLevel(levelId)!.id}/`
           }
           nextTitle={
-            isWeakAreas || isDueReview ? undefined : nextLevel(levelId)?.title
+            isWeakAreas || isDueReview || isAllKanaChallenge
+              ? undefined
+              : nextLevel(levelId)?.title
           }
           levelsHref={state.returnTo?.href ?? `/${script}/`}
           levelsLabel={state.returnTo?.label}
@@ -456,7 +479,9 @@ export const head: DocumentHead = ({ params, url }) => {
       ? "Weak spots"
       : params.levelId === DUE_REVIEW_LEVEL_ID
         ? "Daily review"
-        : level?.title;
+        : params.levelId === ALL_KANA_CHALLENGE_LEVEL_ID
+          ? "All-kana challenge"
+          : level?.title;
   const script = isScript(params.script)
     ? SCRIPT_LABELS[params.script].en
     : "Kana";

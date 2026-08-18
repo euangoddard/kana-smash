@@ -16,6 +16,7 @@ import { BackLink } from "~/components/back-link";
 import { LevelCard } from "~/components/level-card";
 import { SoundToggle } from "~/components/sound-toggle";
 import {
+  ALL_KANA,
   displayKana,
   isScript,
   KANA_BY_ID,
@@ -24,13 +25,20 @@ import {
   type Script,
 } from "~/data/kana";
 import {
+  ALL_KANA_CHALLENGE_LEVEL_ID,
   LEVELS,
   SECTION_LABELS,
   SECTIONS,
   WEAK_AREAS_LEVEL_ID,
 } from "~/data/levels";
 import { STUDY_WORD_BY_ID, wordLevelsForScript } from "~/data/words";
-import { hasWeakAreaData, levelMastery, loadProgress } from "~/lib/progress";
+import {
+  allKanaTested,
+  hasWeakAreaData,
+  levelMastery,
+  loadProgress,
+  testedKanaCount,
+} from "~/lib/progress";
 import { buildMeta } from "~/lib/seo";
 import { setSoundEnabled, soundEnabled } from "~/lib/settings";
 import { findJapaneseVoice } from "~/lib/speech";
@@ -50,6 +58,8 @@ export default component$(() => {
 
   const mastery = useStore<Record<string, number | null>>({});
   const weakReady = useSignal(false);
+  const challengeReady = useSignal(false);
+  const testedCount = useSignal(0);
   const soundOn = useSignal(true);
   const loaded = useSignal(false);
 
@@ -73,6 +83,8 @@ export default component$(() => {
       mastery[`words:${level.id}`] = levelMastery(data, script, kanaIds);
     }
     weakReady.value = hasWeakAreaData(data, script);
+    testedCount.value = testedKanaCount(data, script);
+    challengeReady.value = allKanaTested(data, script);
     soundOn.value = soundEnabled();
     loaded.value = true;
     // Warm the voice cache so quizzes reached from here start instantly.
@@ -122,6 +134,30 @@ export default component$(() => {
             </span>{" "}
             Finish a level or two below and a focused session will be built from
             whatever trips you up.
+          </div>
+        )}
+
+        {challengeReady.value ? (
+          <Link
+            href={`/${script}/quiz/${ALL_KANA_CHALLENGE_LEVEL_ID}/`}
+            class="bg-fuji text-paper hover:bg-fuji-deep mt-3 block rounded-2xl p-5 transition-colors"
+          >
+            <span class="font-display text-lg font-bold">
+              All-kana challenge
+            </span>
+            <span class="mt-1 block text-sm opacity-90">
+              Every {label.en.toLowerCase()} character, once each, in random
+              order — see how many you can get right.
+            </span>
+          </Link>
+        ) : (
+          <div class="dashed-panel text-ink-soft mt-3 p-5 text-sm">
+            <span class="text-ink font-semibold">
+              All-kana challenge unlocks once every character has been
+              tested.
+            </span>{" "}
+            {testedCount.value} of {ALL_KANA.length} {label.en.toLowerCase()}{" "}
+            tested so far.
           </div>
         )}
       </section>

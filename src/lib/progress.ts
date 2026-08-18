@@ -147,6 +147,14 @@ export const hasWeakAreaData = (data: ProgressData, script: Script): boolean =>
   scriptStats(data, script).filter((s) => s.attempts >= MIN_ATTEMPTS).length >=
   5;
 
+/** Count of `script` kana with at least one recorded attempt. */
+export const testedKanaCount = (data: ProgressData, script: Script): number =>
+  scriptStats(data, script).filter((s) => s.attempts > 0).length;
+
+/** True once every kana in `script` has been tested at least once. */
+export const allKanaTested = (data: ProgressData, script: Script): boolean =>
+  testedKanaCount(data, script) === ALL_KANA.length;
+
 /** Per-level mastery: average score of the level's kana (null = unseen). */
 export const levelMastery = (
   data: ProgressData,
