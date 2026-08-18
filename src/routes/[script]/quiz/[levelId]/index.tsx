@@ -21,7 +21,6 @@ import { QuizProgress } from "~/components/quiz/quiz-progress";
 import { QuizPrompt } from "~/components/quiz/quiz-prompt";
 import { QuizResults } from "~/components/quiz/quiz-results";
 import {
-  confusableKanaPool,
   displayKana,
   isScript,
   KANA_BY_ID,
@@ -33,7 +32,6 @@ import {
   DUE_REVIEW_LEVEL_ID,
   LEVELS,
   LEVELS_BY_ID,
-  LOOKALIKES_LEVEL_ID,
   nextLevel,
   WEAK_AREAS_LEVEL_ID,
 } from "~/data/levels";
@@ -62,19 +60,15 @@ export const onGet: RequestHandler = ({ params, error }) => {
   const validLevel =
     LEVELS_BY_ID.has(params.levelId) ||
     params.levelId === WEAK_AREAS_LEVEL_ID ||
-    params.levelId === DUE_REVIEW_LEVEL_ID ||
-    params.levelId === LOOKALIKES_LEVEL_ID;
+    params.levelId === DUE_REVIEW_LEVEL_ID;
   if (!isScript(params.script) || !validLevel) throw error(404, "Not found");
 };
 
 export const onStaticGenerate: StaticGenerateHandler = () => ({
   params: SCRIPTS.flatMap((script) =>
-    [
-      ...LEVELS.map((l) => l.id),
-      WEAK_AREAS_LEVEL_ID,
-      DUE_REVIEW_LEVEL_ID,
-      LOOKALIKES_LEVEL_ID,
-    ].map((levelId) => ({ script, levelId })),
+    [...LEVELS.map((l) => l.id), WEAK_AREAS_LEVEL_ID, DUE_REVIEW_LEVEL_ID].map(
+      (levelId) => ({ script, levelId }),
+    ),
   ),
 });
 
@@ -120,15 +114,12 @@ export default component$(() => {
   const levelId = loc.params.levelId;
   const isWeakAreas = levelId === WEAK_AREAS_LEVEL_ID;
   const isDueReview = levelId === DUE_REVIEW_LEVEL_ID;
-  const isLookalikes = levelId === LOOKALIKES_LEVEL_ID;
   const level = LEVELS_BY_ID.get(levelId);
   const levelTitle = isWeakAreas
     ? "Weak spots"
     : isDueReview
       ? "Daily review"
-      : isLookalikes
-        ? "Look-alikes"
-        : (level?.title ?? "");
+      : (level?.title ?? "");
 
   const state = useStore<QuizState>({
     phase: "loading",
@@ -158,9 +149,6 @@ export default component$(() => {
       return dueKana(loadProgress(), currentScript)
         .slice(0, REVIEW_POOL_SIZE)
         .map((k) => k.id);
-    }
-    if (currentLevelId === LOOKALIKES_LEVEL_ID) {
-      return confusableKanaPool(currentScript);
     }
     if (currentLevelId !== WEAK_AREAS_LEVEL_ID) {
       return LEVELS_BY_ID.get(currentLevelId)?.kanaIds ?? [];
@@ -202,7 +190,6 @@ export default component$(() => {
     const firstVisit =
       currentLevelId !== WEAK_AREAS_LEVEL_ID &&
       currentLevelId !== DUE_REVIEW_LEVEL_ID &&
-      currentLevelId !== LOOKALIKES_LEVEL_ID &&
       !hasSeenIntro(currentScript, currentLevelId);
     if (firstVisit) markIntroSeen(currentScript, currentLevelId);
     state.introRecap = !firstVisit;
@@ -441,14 +428,12 @@ export default component$(() => {
           })}
           onRetry$={startQuiz}
           nextHref={
-            isWeakAreas || isDueReview || isLookalikes || !nextLevel(levelId)
+            isWeakAreas || isDueReview || !nextLevel(levelId)
               ? undefined
               : `/${script}/quiz/${nextLevel(levelId)!.id}/`
           }
           nextTitle={
-            isWeakAreas || isDueReview || isLookalikes
-              ? undefined
-              : nextLevel(levelId)?.title
+            isWeakAreas || isDueReview ? undefined : nextLevel(levelId)?.title
           }
           levelsHref={state.returnTo?.href ?? `/${script}/`}
           levelsLabel={state.returnTo?.label}
@@ -471,9 +456,7 @@ export const head: DocumentHead = ({ params, url }) => {
       ? "Weak spots"
       : params.levelId === DUE_REVIEW_LEVEL_ID
         ? "Daily review"
-        : params.levelId === LOOKALIKES_LEVEL_ID
-          ? "Look-alikes"
-          : level?.title;
+        : level?.title;
   const script = isScript(params.script)
     ? SCRIPT_LABELS[params.script].en
     : "Kana";

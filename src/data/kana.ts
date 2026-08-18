@@ -144,13 +144,11 @@ const HIRAGANA_CONFUSION: string[][] = [
   ["ぶ", "ぷ"],
   ["べ", "ぺ"],
   ["ぼ", "ぽ"],
-  ["こ", "て"],
-  ["ま", "も", "よ"],
 ];
 
 const KATAKANA_CONFUSION: string[][] = [
   ["シ", "ツ", "ソ", "ン"],
-  ["ク", "ワ", "フ", "ウ", "ヲ", "ラ"],
+  ["ク", "ワ", "フ", "ウ", "ヲ"],
   ["ク", "タ", "ケ"],
   ["コ", "ユ", "ヨ", "ロ"],
   ["チ", "テ"],
@@ -161,9 +159,6 @@ const KATAKANA_CONFUSION: string[][] = [
   ["カ", "ガ", "セ"],
   ["ハ", "バ", "パ"],
   ["ヒ", "ビ", "ピ"],
-  ["フ", "ヘ", "レ"],
-  ["ヒ", "ユ"],
-  ["ヤ", "セ"],
 ];
 
 const katakanaToId = (ch: string): string =>
@@ -193,12 +188,6 @@ const CONFUSION: Record<Script, Map<string, Set<string>>> = {
 /** Ids of kana visually confusable with `id` when shown in `script`. */
 export const confusableIds = (id: string, script: Script): string[] => [
   ...(CONFUSION[script].get(id) ?? []),
-];
-
-/** Every kana in `script` that has at least one visual confusable — the
- * pool for the "look-alikes" drill (シ/ツ/ソ/ン, は/ほ, etc.). */
-export const confusableKanaPool = (script: Script): string[] => [
-  ...CONFUSION[script].keys(),
 ];
 
 export const displayKana = (kana: Kana, script: Script): string =>
