@@ -28,23 +28,23 @@
   "devDependencies": {
     "@builder.io/qwik": "^1.20.0",
     "@builder.io/qwik-city": "^1.20.0",
-    "@cloudflare/workers-types": "^4.20260702.1",
+    "@cloudflare/workers-types": "^5.20260818.1",
     "@eslint/js": "^9",
-    "@tailwindcss/vite": "^4.3.2",
-    "@types/node": "26.1.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "26.2.0",
     "eslint": "9.32.0",
     "eslint-plugin-qwik": "^1.20.0",
-    "globals": "17.7.0",
-    "prettier": "3.9.4",
+    "globals": "17.11.0",
+    "prettier": "3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "tailwindcss": "^4.3.2",
+    "tailwindcss": "^4.3.3",
     "typescript": "5.4.5",
-    "typescript-eslint": "8.62.1",
+    "typescript-eslint": "8.67.0",
     "typescript-plugin-css-modules": "latest",
     "undici": "*",
     "vite": "7.3.1",
     "vite-tsconfig-paths": "^6.1.1",
-    "wrangler": "^4.107.0"
+    "wrangler": "^4.124.0"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^1.0.2"
