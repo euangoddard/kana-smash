@@ -35,6 +35,7 @@ import {
   LEVELS,
   LEVELS_BY_ID,
   nextLevel,
+  UNTESTED_KANA_LEVEL_ID,
   WEAK_AREAS_LEVEL_ID,
 } from "~/data/levels";
 import { dueKana, REVIEW_POOL_SIZE } from "~/lib/srs";
@@ -44,6 +45,7 @@ import {
   hasWeakAreaData,
   loadProgress,
   recordAnswer,
+  untestedKana,
   weakKana,
 } from "~/lib/progress";
 import {
@@ -58,23 +60,79 @@ import { vibrateAnswerFeedback } from "~/lib/haptics";
 import { buildMeta } from "~/lib/seo";
 import { soundEnabled } from "~/lib/settings";
 
+const WEAK_POOL_SIZE = 8;
+
+interface DynamicLevelConfig {
+  title: string;
+  buildPool: (script: Script) => string[];
+  /** Skip the closing matching round and cover the whole pool in one pass,
+   * instead of the usual fixed-length question set. */
+  fullPass?: boolean;
+  /** Custom empty-state copy shown when the pool comes back empty. */
+  empty?: {
+    title: string;
+    body: string;
+    href: (script: Script) => string;
+    cta: string;
+  };
+}
+
+/**
+ * Every non-lesson level (weak spots, review, challenges…) in one place —
+ * title, pool, and behaviour all keyed by the same id, so the rest of the
+ * route can ask this table instead of chaining `levelId === ...` checks.
+ */
+const DYNAMIC_LEVELS: Record<string, DynamicLevelConfig> = {
+  [WEAK_AREAS_LEVEL_ID]: {
+    title: "Weak spots",
+    buildPool: (script) => {
+      const data = loadProgress();
+      if (!hasWeakAreaData(data, script)) return [];
+      return weakKana(data, script, WEAK_POOL_SIZE).map((k) => k.id);
+    },
+  },
+  [DUE_REVIEW_LEVEL_ID]: {
+    title: "Daily review",
+    buildPool: (script) =>
+      dueKana(loadProgress(), script)
+        .slice(0, REVIEW_POOL_SIZE)
+        .map((k) => k.id),
+    empty: {
+      title: "All caught up!",
+      body: "Nothing is due for review right now. Practise a level to add characters to the rotation, or come back later.",
+      href: () => "/review/",
+      cta: "Back to review",
+    },
+  },
+  [ALL_KANA_CHALLENGE_LEVEL_ID]: {
+    title: "All-kana challenge",
+    buildPool: () => ALL_KANA.map((k) => k.id),
+    fullPass: true,
+  },
+  [UNTESTED_KANA_LEVEL_ID]: {
+    title: "Untested kana",
+    buildPool: (script) => untestedKana(loadProgress(), script).map((k) => k.id),
+    fullPass: true,
+    empty: {
+      title: "Nothing left untested!",
+      body: "Every character has been tested at least once — the all-kana challenge is ready for you.",
+      href: (script) => `/${script}/quiz/${ALL_KANA_CHALLENGE_LEVEL_ID}/`,
+      cta: "Take the challenge",
+    },
+  },
+};
+
 export const onGet: RequestHandler = ({ params, error }) => {
   const validLevel =
-    LEVELS_BY_ID.has(params.levelId) ||
-    params.levelId === WEAK_AREAS_LEVEL_ID ||
-    params.levelId === DUE_REVIEW_LEVEL_ID ||
-    params.levelId === ALL_KANA_CHALLENGE_LEVEL_ID;
+    LEVELS_BY_ID.has(params.levelId) || params.levelId in DYNAMIC_LEVELS;
   if (!isScript(params.script) || !validLevel) throw error(404, "Not found");
 };
 
 export const onStaticGenerate: StaticGenerateHandler = () => ({
   params: SCRIPTS.flatMap((script) =>
-    [
-      ...LEVELS.map((l) => l.id),
-      WEAK_AREAS_LEVEL_ID,
-      DUE_REVIEW_LEVEL_ID,
-      ALL_KANA_CHALLENGE_LEVEL_ID,
-    ].map((levelId) => ({ script, levelId })),
+    [...LEVELS.map((l) => l.id), ...Object.keys(DYNAMIC_LEVELS)].map(
+      (levelId) => ({ script, levelId }),
+    ),
   ),
 });
 
@@ -103,8 +161,6 @@ interface QuizState {
   returnTo: ReturnTarget | null;
 }
 
-const WEAK_POOL_SIZE = 8;
-
 /** Below this a matching round isn't a real puzzle, so it's skipped. */
 const MIN_MATCH_PAIRS = 2;
 
@@ -118,17 +174,9 @@ export default component$(() => {
   const loc = useLocation();
   const script = loc.params.script as Script;
   const levelId = loc.params.levelId;
-  const isWeakAreas = levelId === WEAK_AREAS_LEVEL_ID;
-  const isDueReview = levelId === DUE_REVIEW_LEVEL_ID;
-  const isAllKanaChallenge = levelId === ALL_KANA_CHALLENGE_LEVEL_ID;
+  const dynamic = DYNAMIC_LEVELS[levelId] as DynamicLevelConfig | undefined;
   const level = LEVELS_BY_ID.get(levelId);
-  const levelTitle = isWeakAreas
-    ? "Weak spots"
-    : isDueReview
-      ? "Daily review"
-      : isAllKanaChallenge
-        ? "All-kana challenge"
-        : (level?.title ?? "");
+  const levelTitle = dynamic?.title ?? level?.title ?? "";
 
   const state = useStore<QuizState>({
     phase: "loading",
@@ -154,26 +202,15 @@ export default component$(() => {
   const buildPoolIds = $((): string[] => {
     const currentLevelId = loc.params.levelId;
     const currentScript = loc.params.script as Script;
-    if (currentLevelId === DUE_REVIEW_LEVEL_ID) {
-      return dueKana(loadProgress(), currentScript)
-        .slice(0, REVIEW_POOL_SIZE)
-        .map((k) => k.id);
-    }
-    if (currentLevelId === ALL_KANA_CHALLENGE_LEVEL_ID) {
-      return ALL_KANA.map((k) => k.id);
-    }
-    if (currentLevelId !== WEAK_AREAS_LEVEL_ID) {
-      return LEVELS_BY_ID.get(currentLevelId)?.kanaIds ?? [];
-    }
-    const data = loadProgress();
-    if (!hasWeakAreaData(data, currentScript)) return [];
-    return weakKana(data, currentScript, WEAK_POOL_SIZE).map((k) => k.id);
+    const config = DYNAMIC_LEVELS[currentLevelId];
+    if (config) return config.buildPool(currentScript);
+    return LEVELS_BY_ID.get(currentLevelId)?.kanaIds ?? [];
   });
 
   const startQuiz = $(async () => {
     const currentScript = loc.params.script as Script;
     const currentLevelId = loc.params.levelId;
-    const isChallenge = currentLevelId === ALL_KANA_CHALLENGE_LEVEL_ID;
+    const config = DYNAMIC_LEVELS[currentLevelId];
     const poolIds = await buildPoolIds();
     if (!poolIds.length) {
       state.phase = "empty";
@@ -188,27 +225,21 @@ export default component$(() => {
     state.soundMissing = soundWanted && !includeSound;
     const pool = poolIds.map((id) => KANA_BY_ID.get(id)!);
     state.questions = generateQuiz(pool, currentScript, {
-      questionCount: isChallenge ? pool.length : DEFAULT_QUESTION_COUNT,
+      questionCount: config?.fullPass ? pool.length : DEFAULT_QUESTION_COUNT,
       includeSound,
     });
-    // The challenge is a single pass over every kana — no closing matching
-    // round on top of that.
-    state.matchIds = isChallenge
-      ? []
-      : buildMatchSet(pool).map((k) => k.id);
+    // A full-pass session (challenge, untested kana) is one lap over its
+    // pool — no closing matching round on top of that.
+    state.matchIds = config?.fullPass ? [] : buildMatchSet(pool).map((k) => k.id);
     state.matchMistakes = null;
     state.index = 0;
     state.selected = null;
     state.correctCount = 0;
     state.missedIds = [];
-    // First time on a regular level, open with the character introduction
-    // (weak-spot, review, and challenge sessions reuse known characters, so
-    // nothing is "new" there).
-    const firstVisit =
-      currentLevelId !== WEAK_AREAS_LEVEL_ID &&
-      currentLevelId !== DUE_REVIEW_LEVEL_ID &&
-      currentLevelId !== ALL_KANA_CHALLENGE_LEVEL_ID &&
-      !hasSeenIntro(currentScript, currentLevelId);
+    // First time on a regular level, open with the character introduction.
+    // Every dynamic level (weak-spot, review, challenge, untested kana) is a
+    // practice/test session rather than a lesson, so it skips straight in.
+    const firstVisit = !config && !hasSeenIntro(currentScript, currentLevelId);
     if (firstVisit) markIntroSeen(currentScript, currentLevelId);
     state.introRecap = !firstVisit;
     state.phase = firstVisit ? "intro" : "question";
@@ -317,13 +348,13 @@ export default component$(() => {
       )}
 
       {state.phase === "empty" &&
-        (isDueReview ? (
+        (dynamic?.empty ? (
           <QuizEmpty
             script={script}
-            title="All caught up!"
-            body="Nothing is due for review right now. Practise a level to add characters to the rotation, or come back later."
-            href="/review/"
-            cta="Back to review"
+            title={dynamic.empty.title}
+            body={dynamic.empty.body}
+            href={dynamic.empty.href(script)}
+            cta={dynamic.empty.cta}
           />
         ) : (
           <QuizEmpty script={script} />
@@ -446,18 +477,11 @@ export default component$(() => {
           })}
           onRetry$={startQuiz}
           nextHref={
-            isWeakAreas ||
-            isDueReview ||
-            isAllKanaChallenge ||
-            !nextLevel(levelId)
+            dynamic || !nextLevel(levelId)
               ? undefined
               : `/${script}/quiz/${nextLevel(levelId)!.id}/`
           }
-          nextTitle={
-            isWeakAreas || isDueReview || isAllKanaChallenge
-              ? undefined
-              : nextLevel(levelId)?.title
-          }
+          nextTitle={dynamic ? undefined : nextLevel(levelId)?.title}
           levelsHref={state.returnTo?.href ?? `/${script}/`}
           levelsLabel={state.returnTo?.label}
           progressHref={`/progress/?script=${script}`}
@@ -474,14 +498,7 @@ export default component$(() => {
 
 export const head: DocumentHead = ({ params, url }) => {
   const level = LEVELS_BY_ID.get(params.levelId);
-  const levelTitle =
-    params.levelId === WEAK_AREAS_LEVEL_ID
-      ? "Weak spots"
-      : params.levelId === DUE_REVIEW_LEVEL_ID
-        ? "Daily review"
-        : params.levelId === ALL_KANA_CHALLENGE_LEVEL_ID
-          ? "All-kana challenge"
-          : level?.title;
+  const levelTitle = DYNAMIC_LEVELS[params.levelId]?.title ?? level?.title;
   const script = isScript(params.script)
     ? SCRIPT_LABELS[params.script].en
     : "Kana";

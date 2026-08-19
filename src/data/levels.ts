@@ -98,6 +98,10 @@ export const DUE_REVIEW_LEVEL_ID = "due-review";
  * once all of them have been tested at least once. */
 export const ALL_KANA_CHALLENGE_LEVEL_ID = "all-kana-challenge";
 
+/** Special dynamic level: kana never attempted yet, one pass each — the
+ * fast path to unlocking the all-kana challenge. */
+export const UNTESTED_KANA_LEVEL_ID = "untested-kana";
+
 export const LEVELS_BY_ID: ReadonlyMap<string, Level> = new Map(
   LEVELS.map((l) => [l.id, l]),
 );

@@ -155,6 +155,10 @@ export const testedKanaCount = (data: ProgressData, script: Script): number =>
 export const allKanaTested = (data: ProgressData, script: Script): boolean =>
   testedKanaCount(data, script) === ALL_KANA.length;
 
+/** Kana in `script` with no recorded attempts yet. */
+export const untestedKana = (data: ProgressData, script: Script): Kana[] =>
+  ALL_KANA.filter((k) => !data[script][k.id]?.length);
+
 /** Per-level mastery: average score of the level's kana (null = unseen). */
 export const levelMastery = (
   data: ProgressData,

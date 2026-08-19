@@ -29,6 +29,7 @@ import {
   LEVELS,
   SECTION_LABELS,
   SECTIONS,
+  UNTESTED_KANA_LEVEL_ID,
   WEAK_AREAS_LEVEL_ID,
 } from "~/data/levels";
 import { STUDY_WORD_BY_ID, wordLevelsForScript } from "~/data/words";
@@ -158,6 +159,13 @@ export default component$(() => {
             </span>{" "}
             {testedCount.value} of {ALL_KANA.length} {label.en.toLowerCase()}{" "}
             tested so far.
+            <Link
+              href={`/${script}/quiz/${UNTESTED_KANA_LEVEL_ID}/`}
+              class="text-fuji hover:text-fuji-deep mt-3 block font-semibold underline decoration-dotted underline-offset-4"
+            >
+              Practice the {ALL_KANA.length - testedCount.value} you haven't
+              tried yet →
+            </Link>
           </div>
         )}
       </section>
