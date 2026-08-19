@@ -78,8 +78,14 @@ The app deploys as a Cloudflare Worker (adapter in
 pages are server-rendered, and a cron trigger sends practice-reminder
 push notifications (see `wrangler.jsonc`).
 
+**Auto-deploy**: Cloudflare Workers Builds is connected to this repo —
+every push to `main` triggers a build (`npm run build`) and deploy
+(`npx wrangler deploy`) automatically. Configured under Workers & Pages →
+kana-smash → Settings → Build. New D1 migrations are *not* applied by
+Workers Builds and still need to be run manually (see below).
+
 ```shell
-npm run deploy      # build + wrangler deploy
+npm run deploy      # manual build + wrangler deploy, if needed
 ```
 
 ### Practice reminders
